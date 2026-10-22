@@ -12,3 +12,56 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Store {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  active    Boolean  @default(true)
+  timezone  String   @default("America/Sao_Paulo")
+  currency  String   @default("BRL")
+  createdAt DateTime @default(now())
+
+  domains   StoreDomain[]
+  members   StoreMember[]
+}
+
+model StoreDomain {
+  id      String @id @default(cuid())
+  storeId String
+  domain  String @unique
+
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+model Account {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  memberships  StoreMember[]
+}
+
+enum StoreRole {
+  OWNER
+  MANAGER
+  ATTENDANT
+  KITCHEN
+  DELIVERY
+}
+
+model StoreMember {
+  id        String    @id @default(cuid())
+  accountId String
+  storeId   String
+  role      StoreRole
+
+  account   Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  store     Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, storeId])
+  @@index([storeId])
+}
