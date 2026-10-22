@@ -37,6 +37,25 @@ export function canJoinRoom(room: string, sessionStoreIds: string[]): boolean {
   return sessionStoreIds.includes(storeId);
 }
 
+export function parseCookieHeader(header: string | undefined): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  if (!header) {
+    return cookies;
+  }
+
+  for (const pair of header.split(";")) {
+    const separatorIndex = pair.indexOf("=");
+    if (separatorIndex === -1) continue;
+    const name = pair.slice(0, separatorIndex).trim();
+    const value = pair.slice(separatorIndex + 1).trim();
+    if (name) {
+      cookies[name] = decodeURIComponent(value);
+    }
+  }
+
+  return cookies;
+}
+
 export function broadcast(room: string, event: OrderRealtimeEvent): void {
   io?.to(room).emit("order_status_changed", event);
 }
@@ -60,12 +79,16 @@ export function createRealtimeServer(httpServer: HTTPServer): RealtimeServer {
   io = new SocketIOServer(httpServer);
   const server = new RealtimeServer();
 
-  io.on("connection", async (socket) => {
-    const token = await getToken({ req: socket.request as never });
-    const sessionStoreIds = (token as unknown as { availableStoreIds?: string[] })?.availableStoreIds ?? [];
+  io.use(async (socket, next) => {
+    const cookies = parseCookieHeader(socket.request.headers.cookie);
+    const token = await getToken({ req: { cookies, headers: socket.request.headers } as never });
+    socket.data.availableStoreIds = (token as unknown as { availableStoreIds?: string[] })?.availableStoreIds ?? [];
+    next();
+  });
 
+  io.on("connection", (socket) => {
     socket.on("join", (room: string) => {
-      server.joinRoom(socket.id, room, sessionStoreIds);
+      server.joinRoom(socket.id, room, socket.data.availableStoreIds ?? []);
     });
   });
 

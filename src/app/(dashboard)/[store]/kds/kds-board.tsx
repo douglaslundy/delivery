@@ -15,22 +15,26 @@ type Order = {
 
 const VISIBLE_STATUSES = ["CONFIRMED", "PREPARING"];
 
+async function fetchActiveOrders(storeId: string): Promise<Order[]> {
+  const res = await fetch(`/api/stores/${storeId}/orders?status=active`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  if (!Array.isArray(data)) return [];
+  return data.filter((o: Order) => VISIBLE_STATUSES.includes(o.status));
+}
+
 export default function KdsBoard() {
   const params = useParams<{ store: string }>();
   const storeId = params.store;
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    fetch(`/api/stores/${storeId}/orders?status=active`)
-      .then((r) => r.json())
-      .then((data: Order[]) => setOrders(data.filter((o) => VISIBLE_STATUSES.includes(o.status))));
+    fetchActiveOrders(storeId).then(setOrders);
 
     const socket = io();
     socket.emit("join", `store:${storeId}:kds`);
     socket.on("order_status_changed", () => {
-      fetch(`/api/stores/${storeId}/orders?status=active`)
-        .then((r) => r.json())
-        .then((data: Order[]) => setOrders(data.filter((o) => VISIBLE_STATUSES.includes(o.status))));
+      fetchActiveOrders(storeId).then(setOrders);
     });
 
     return () => {

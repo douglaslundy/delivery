@@ -33,7 +33,11 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
         where: { storeId, productId: item.productId },
       });
 
-      const selectedAddons = addons.filter((a) => item.selectedAddonIds.includes(a.id));
+      if (product.pricePerKg && item.quantity !== 1) {
+        throw new Error("per-kg items must have quantity 1; adjust weightGrams instead");
+      }
+
+      const selectedAddons = addons.filter((a) => a.active && item.selectedAddonIds.includes(a.id));
       const unitPriceCents = calculateItemPrice(product, addons, item) / item.quantity;
 
       return {

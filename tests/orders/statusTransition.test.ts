@@ -32,4 +32,19 @@ describe("order status transition endpoint", () => {
     );
     expect(res.status).toBe(409);
   });
+
+  it("only applies one of two concurrent identical transitions, not both", async () => {
+    const makeRequest = () =>
+      PATCH(
+        new Request("http://x", { method: "PATCH", body: JSON.stringify({ status: "CONFIRMED" }), ...hostFor("status-teste") }),
+        { params: { storeId, orderId } } as any,
+      );
+
+    const [first, second] = await Promise.all([makeRequest(), makeRequest()]);
+    const statuses = [first.status, second.status].sort();
+    expect(statuses).toEqual([200, 409]);
+
+    const events = await prisma.orderStatusEvent.findMany({ where: { orderId, status: "CONFIRMED" } });
+    expect(events).toHaveLength(1);
+  });
 });

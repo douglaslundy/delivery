@@ -31,17 +31,25 @@ export async function PATCH(
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    const updatedOrder = await tx.order.update({
-      where: { storeId_id: { storeId, id: orderId } },
+    const { count } = await tx.order.updateMany({
+      where: { storeId, id: orderId, status: order.status },
       data: { status: body.status },
     });
+
+    if (count === 0) {
+      return null;
+    }
 
     await tx.orderStatusEvent.create({
       data: { storeId, orderId, status: body.status },
     });
 
-    return updatedOrder;
+    return tx.order.findUniqueOrThrow({ where: { storeId_id: { storeId, id: orderId } } });
   });
+
+  if (!updated) {
+    return NextResponse.json({ error: "order status changed concurrently" }, { status: 409 });
+  }
 
   publishOrderEvent(storeId, updated);
 

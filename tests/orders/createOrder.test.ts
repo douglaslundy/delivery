@@ -29,4 +29,21 @@ describe("createOrder", () => {
     expect(events).toHaveLength(1);
     expect(events[0].status).toBe("RECEIVED");
   });
+
+  it("rejects quantity > 1 for a per-kg product instead of silently rounding the unit price", async () => {
+    const perKgId = (await prisma.product.create({ data: { storeId, name: "Feijoada", priceCents: 1665, pricePerKg: true } })).id;
+    await expect(
+      createOrder(storeId, { channel: "PDV", items: [{ productId: perKgId, quantity: 2, weightGrams: 1000, selectedAddonIds: [] }] }),
+    ).rejects.toThrow();
+  });
+
+  it("does not snapshot an inactive addon onto the order even if its id was sent", async () => {
+    const addon = await prisma.productAddon.create({ data: { storeId, productId, groupName: "Extra", name: "Guardanapo", priceCents: 0, active: false } });
+    const order = await createOrder(storeId, {
+      channel: "PDV",
+      items: [{ productId, quantity: 1, selectedAddonIds: [addon.id] }],
+    });
+    const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } });
+    expect(item.addons).toEqual([]);
+  });
 });
