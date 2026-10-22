@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 
@@ -33,7 +34,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
   const body = await request.json();
 
   const entry = await prisma.financeEntry.create({
-    data: { storeId, orderId: null, ...pickAllowedFields(body) },
+    data: { storeId, orderId: null, ...pickAllowedFields(body) } as Prisma.FinanceEntryUncheckedCreateInput,
   });
 
   return NextResponse.json(entry, { status: 201 });
