@@ -22,6 +22,17 @@ export default function ProductForm() {
     fetch(`/api/stores/${storeId}/categories`).then((r) => r.json()).then(setCategories);
     if (!isNew) {
       fetch(`/api/stores/${storeId}/products/${params.productId}/addons`).then((r) => r.json()).then(setAddons);
+      fetch(`/api/stores/${storeId}/products`)
+        .then((r) => r.json())
+        .then((products: { id: string; name: string; categoryId: string | null; pricePerKg: boolean; priceCents: number | null }[]) => {
+          const product = products.find((p) => p.id === params.productId);
+          if (product) {
+            setName(product.name);
+            setCategoryId(product.categoryId ?? "");
+            setPricePerKg(product.pricePerKg);
+            setPriceCents(product.priceCents != null ? String(product.priceCents) : "");
+          }
+        });
     }
   }, [storeId, isNew, params.productId]);
 

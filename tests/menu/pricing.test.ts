@@ -33,4 +33,24 @@ describe("calculateItemPrice", () => {
     ] as any;
     expect(() => calculateItemPrice(fixedProduct, group, { productId: "p1", quantity: 1, selectedAddonIds: ["a1", "a2"] })).toThrow(PricingError);
   });
+
+  it("multiplies addon price by quantity, same as the product itself", () => {
+    const addon = [{ id: "a1", productId: "p1", groupName: "Borda", priceCents: 500, required: false, multiple: false, active: true }] as any;
+    expect(calculateItemPrice(fixedProduct, addon, { productId: "p1", quantity: 2, selectedAddonIds: ["a1"] })).toBe(8000 + 1000);
+  });
+
+  it("does not let an inactive addon satisfy a required group", () => {
+    const group = [{ id: "a1", productId: "p1", groupName: "Tamanho", priceCents: 0, required: true, multiple: false, active: false }] as any;
+    expect(() => calculateItemPrice(fixedProduct, group, { productId: "p1", quantity: 1, selectedAddonIds: ["a1"] })).toThrow(PricingError);
+  });
+
+  it("throws when quantity is zero or negative", () => {
+    expect(() => calculateItemPrice(fixedProduct, [], { productId: "p1", quantity: 0, selectedAddonIds: [] })).toThrow(PricingError);
+    expect(() => calculateItemPrice(fixedProduct, [], { productId: "p1", quantity: -1, selectedAddonIds: [] })).toThrow(PricingError);
+  });
+
+  it("throws when weightGrams is zero or negative for a per-kg product", () => {
+    expect(() => calculateItemPrice(perKgProduct, [], { productId: "p2", quantity: 1, weightGrams: 0, selectedAddonIds: [] })).toThrow(PricingError);
+    expect(() => calculateItemPrice(perKgProduct, [], { productId: "p2", quantity: 1, weightGrams: -100, selectedAddonIds: [] })).toThrow(PricingError);
+  });
 });

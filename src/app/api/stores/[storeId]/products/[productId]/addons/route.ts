@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import type { ProductAddon } from "@prisma/client";
+import { Prisma, type ProductAddon } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
   const { storeId, productId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const addons = await prisma.productAddon.findMany({
     where: { storeId, productId },
     orderBy: { position: "asc" },
@@ -25,6 +30,10 @@ export async function POST(
   { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
   const { storeId, productId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   if (typeof body.groupName !== "string" || body.groupName.trim() === "") {
@@ -34,17 +43,24 @@ export async function POST(
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
-  const addon = await prisma.productAddon.create({
-    data: {
-      storeId,
-      productId,
-      groupName: body.groupName,
-      name: body.name,
-      priceCents: body.priceCents ?? 0,
-      required: body.required ?? false,
-      multiple: body.multiple ?? false,
-    },
-  });
+  try {
+    const addon = await prisma.productAddon.create({
+      data: {
+        storeId,
+        productId,
+        groupName: body.groupName,
+        name: body.name,
+        priceCents: body.priceCents ?? 0,
+        required: body.required ?? false,
+        multiple: body.multiple ?? false,
+      },
+    });
 
-  return NextResponse.json(addon, { status: 201 });
+    return NextResponse.json(addon, { status: 201 });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
+      return NextResponse.json({ error: "product not found" }, { status: 404 });
+    }
+    throw error;
+  }
 }

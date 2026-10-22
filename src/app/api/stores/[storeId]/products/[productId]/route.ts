@@ -1,12 +1,37 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isStoreRequestAuthorized } from "@/lib/menu/guard";
+
+const ALLOWED_FIELDS = [
+  "name",
+  "categoryId",
+  "description",
+  "priceCents",
+  "pricePerKg",
+  "active",
+  "position",
+] as const;
+
+function pickAllowedFields(body: Record<string, unknown>) {
+  const data: Record<string, unknown> = {};
+  for (const field of ALLOWED_FIELDS) {
+    if (field in body) {
+      data[field] = body[field];
+    }
+  }
+  return data;
+}
 
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
   const { storeId, productId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   if ("priceCents" in body && (typeof body.priceCents !== "number" || !Number.isInteger(body.priceCents) || body.priceCents <= 0)) {
@@ -16,7 +41,7 @@ export async function PATCH(
   try {
     const product = await prisma.product.update({
       where: { storeId_id: { storeId, id: productId } },
-      data: body,
+      data: pickAllowedFields(body),
     });
 
     return NextResponse.json(product);
@@ -29,10 +54,13 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
   const { storeId, productId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   try {
     await prisma.product.delete({

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 
 export async function GET(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const active = searchParams.get("active");
 
@@ -19,6 +24,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
 
 export async function POST(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
 
   if (typeof body.name !== "string" || body.name.trim() === "") {
