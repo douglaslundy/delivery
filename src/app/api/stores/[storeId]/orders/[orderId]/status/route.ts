@@ -3,9 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 import { canTransition } from "@/lib/orders/stateMachine";
-
-// TODO(Task 6): replace with the real publishOrderEvent once the realtime layer lands.
-function publishOrderEvent(): void {}
+import { publishOrderEvent } from "@/lib/orders/publishOrderEvent";
 
 export async function PATCH(
   request: Request,
@@ -45,7 +43,7 @@ export async function PATCH(
     return updatedOrder;
   });
 
-  publishOrderEvent();
+  publishOrderEvent(storeId, updated);
 
   return NextResponse.json(updated);
 }
