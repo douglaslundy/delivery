@@ -28,6 +28,7 @@ model Store {
   products        Product[]
   classifications ProductClassification[]
   productAddons   ProductAddon[]
+  orders          Order[]
 }
 
 model StoreDomain {
@@ -136,4 +137,80 @@ model ProductAddon {
 
   @@index([storeId])
   @@index([productId])
+}
+
+enum OrderChannel {
+  PDV
+  SALAO
+  DELIVERY
+  AGENDADO
+}
+
+enum OrderStatus {
+  RECEIVED
+  CONFIRMED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  COMPLETED
+  CANCELED
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  storeId        String
+  customerId     String?
+  channel        OrderChannel
+  status         OrderStatus  @default(RECEIVED)
+  tableNumber    String?
+  scheduledFor   DateTime?
+  deliveryAddress Json?
+  deliveryId     String?
+  subtotalCents  Int
+  discountCents  Int          @default(0)
+  deliveryFeeCents Int        @default(0)
+  totalCents     Int
+  paymentMethod  String?
+  mpPaymentId    String?
+  couponId       String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  store          Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items          OrderItem[]
+  statusHistory  OrderStatusEvent[]
+
+  @@unique([storeId, id])
+  @@index([storeId, status])
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  storeId     String
+  orderId     String
+  productId   String
+  quantity    Int
+  unitPriceCents Int
+  weightGrams Int?
+  addons      Json
+  notes       String?
+
+  order       Order   @relation(fields: [storeId, orderId], references: [storeId, id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([orderId])
+}
+
+model OrderStatusEvent {
+  id        String      @id @default(cuid())
+  storeId   String
+  orderId   String
+  status    OrderStatus
+  createdAt DateTime    @default(now())
+  actorId   String?
+
+  order     Order       @relation(fields: [storeId, orderId], references: [storeId, id], onDelete: Cascade)
+
+  @@index([orderId])
 }
