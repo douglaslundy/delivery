@@ -22,8 +22,12 @@ model Store {
   currency  String   @default("BRL")
   createdAt DateTime @default(now())
 
-  domains   StoreDomain[]
-  members   StoreMember[]
+  domains    StoreDomain[]
+  members    StoreMember[]
+  categories      Category[]
+  products        Product[]
+  classifications ProductClassification[]
+  productAddons   ProductAddon[]
 }
 
 model StoreDomain {
@@ -64,4 +68,72 @@ model StoreMember {
 
   @@unique([accountId, storeId])
   @@index([storeId])
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  storeId   String
+  name      String
+  position  Int      @default(0)
+  active    Boolean  @default(true)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products  Product[]
+
+  @@unique([storeId, id])
+  @@index([storeId])
+}
+
+model Product {
+  id           String   @id @default(cuid())
+  storeId      String
+  categoryId   String?
+  name         String
+  description  String   @default("")
+  descriptionAiSuggested String?
+  photoUrl     String?
+  priceCents   Int?
+  pricePerKg   Boolean  @default(false)
+  active       Boolean  @default(true)
+  position     Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category     Category?     @relation(fields: [storeId, categoryId], references: [storeId, id])
+  addons       ProductAddon[]
+  classifications ProductClassification[]
+
+  @@unique([storeId, id])
+  @@index([storeId])
+  @@index([categoryId])
+}
+
+model ProductClassification {
+  id        String  @id @default(cuid())
+  storeId   String
+  productId String
+  label     String
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [storeId, productId], references: [storeId, id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([productId])
+}
+
+model ProductAddon {
+  id         String  @id @default(cuid())
+  storeId    String
+  productId  String
+  groupName  String
+  name       String
+  priceCents Int     @default(0)
+  required   Boolean @default(false)
+  multiple   Boolean @default(false)
+  active     Boolean @default(true)
+  position   Int     @default(0)
+
+  store      Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [storeId, productId], references: [storeId, id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([productId])
 }
