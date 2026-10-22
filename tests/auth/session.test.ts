@@ -27,6 +27,14 @@ describe("session callback", () => {
     const session = await authOptions.callbacks!.session!({ session: { user: {} } as any, token } as any);
     expect((session as any).storeId).toBe(storeId);
   });
+
+  it("jwt callback populates token.availableStoreIds at sign-in, which middleware relies on", async () => {
+    const token = await authOptions.callbacks!.jwt!({
+      token: { sub: accountId },
+      user: { id: accountId } as any,
+    } as any);
+    expect((token as any).availableStoreIds).toEqual([storeId]);
+  });
 });
 
 describe("requiresStoreSelection", () => {

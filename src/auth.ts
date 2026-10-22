@@ -35,6 +35,16 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        const memberships = await prisma.storeMember.findMany({ where: { accountId: user.id } });
+        (token as unknown as { availableStoreIds: string[] }).availableStoreIds = memberships.map(
+          (m) => m.storeId,
+        );
+      }
+
+      return token;
+    },
     async session({ session, token }) {
       const memberships = await prisma.storeMember.findMany({ where: { accountId: token.sub } });
 
