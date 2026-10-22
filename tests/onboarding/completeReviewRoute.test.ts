@@ -5,14 +5,17 @@ import { POST } from "@/app/api/stores/[storeId]/onboarding/complete-review/rout
 
 describe("complete-review route", () => {
   let storeId: string;
-  afterEach(async () => { await prisma.store.delete({ where: { id: storeId } }); });
+  afterEach(async () => {
+    await prisma.store.delete({ where: { id: storeId } });
+    await prisma.account.deleteMany({ where: { email: { startsWith: "owner-complete-review-teste" } } });
+  });
 
   function hostFor(slug: string) {
     return { headers: { host: `${slug}.dominio.com` } };
   }
 
   it("completes the review via the route", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "complete-review-teste", name: "T" });
+    const { store } = await createStoreWithOnboarding({ slug: "complete-review-teste", name: "T", ownerEmail: "owner-complete-review-teste@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     const res = await POST(
       new Request("http://x", { method: "POST", ...hostFor("complete-review-teste") }),

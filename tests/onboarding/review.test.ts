@@ -4,16 +4,19 @@ import { createStoreWithOnboarding, completeReview, canAccessDashboard } from "@
 
 describe("review completion and dashboard access", () => {
   let storeId: string;
-  afterEach(async () => { await prisma.store.delete({ where: { id: storeId } }); });
+  afterEach(async () => {
+    await prisma.store.delete({ where: { id: storeId } });
+    await prisma.account.deleteMany({ where: { email: { startsWith: "owner-review-teste" } } });
+  });
 
   it("allows dashboard access with only step 1 done", async () => {
-    const { progress } = await createStoreWithOnboarding({ slug: "review-teste", name: "T", foodCategory: "x" });
+    const { progress } = await createStoreWithOnboarding({ slug: "review-teste", name: "T", foodCategory: "x", ownerEmail: "owner-review-teste@test.com", ownerPassword: "senha12345" });
     storeId = progress.storeId;
     expect(canAccessDashboard(progress)).toBe(true);
   });
 
   it("completeReview sets completedAt when step 1 is done", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "review-teste-2", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "review-teste-2", name: "T", foodCategory: "x", ownerEmail: "owner-review-teste-2@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await completeReview(storeId);
     const progress = await prisma.storeOnboardingProgress.findUniqueOrThrow({ where: { storeId } });

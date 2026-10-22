@@ -5,14 +5,17 @@ import { PATCH } from "@/app/api/stores/[storeId]/settings/route";
 
 describe("settings route validation", () => {
   let storeId: string;
-  afterEach(async () => { await prisma.store.delete({ where: { id: storeId } }); });
+  afterEach(async () => {
+    await prisma.store.delete({ where: { id: storeId } });
+    await prisma.account.deleteMany({ where: { email: { startsWith: "owner-settings-val" } } });
+  });
 
   function hostFor(slug: string) {
     return { headers: { host: `${slug}.dominio.com` } };
   }
 
   it("rejects a negative tableCount", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "settings-val-1", name: "T" });
+    const { store } = await createStoreWithOnboarding({ slug: "settings-val-1", name: "T", ownerEmail: "owner-settings-val-1@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     const res = await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ tableCount: -5 }), ...hostFor("settings-val-1") }),
@@ -22,7 +25,7 @@ describe("settings route validation", () => {
   });
 
   it("rejects a negative estimatedDeliveryMinutes", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "settings-val-2", name: "T" });
+    const { store } = await createStoreWithOnboarding({ slug: "settings-val-2", name: "T", ownerEmail: "owner-settings-val-2@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     const res = await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ estimatedDeliveryMinutes: -1 }), ...hostFor("settings-val-2") }),
@@ -32,7 +35,7 @@ describe("settings route validation", () => {
   });
 
   it("rejects businessHours that isn't an array", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "settings-val-3", name: "T" });
+    const { store } = await createStoreWithOnboarding({ slug: "settings-val-3", name: "T", ownerEmail: "owner-settings-val-3@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     const res = await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ businessHours: "nao sou array" }), ...hostFor("settings-val-3") }),
@@ -42,7 +45,7 @@ describe("settings route validation", () => {
   });
 
   it("does not mark step3HoursDone when businessHours is cleared with null", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "settings-val-4", name: "T" });
+    const { store } = await createStoreWithOnboarding({ slug: "settings-val-4", name: "T", ownerEmail: "owner-settings-val-4@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ businessHours: null }), ...hostFor("settings-val-4") }),

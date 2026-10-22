@@ -8,14 +8,17 @@ import { POST as createWhatsappInstance } from "@/app/api/stores/[storeId]/whats
 
 describe("step wiring via settings route", () => {
   let storeId: string;
-  afterEach(async () => { await prisma.store.delete({ where: { id: storeId } }); });
+  afterEach(async () => {
+    await prisma.store.delete({ where: { id: storeId } });
+    await prisma.account.deleteMany({ where: { email: { startsWith: "owner-wiring-teste" } } });
+  });
 
   function hostFor(slug: string) {
     return { headers: { host: `${slug}.dominio.com` } };
   }
 
   it("marks step3HoursDone when business hours are saved", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste", name: "T", foodCategory: "x", ownerEmail: "owner-wiring-teste@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ businessHours: [{ day: "MON", opensAt: "11:00", closesAt: "23:00" }] }), ...hostFor("wiring-teste") }),
@@ -26,7 +29,7 @@ describe("step wiring via settings route", () => {
   });
 
   it("marks step6DeliveryTimeDone when estimatedDeliveryMinutes is saved", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-2", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-2", name: "T", foodCategory: "x", ownerEmail: "owner-wiring-teste-2@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ estimatedDeliveryMinutes: 40 }), ...hostFor("wiring-teste-2") }),
@@ -37,7 +40,7 @@ describe("step wiring via settings route", () => {
   });
 
   it("marks step7SalaoStructureDone when tableCount/hasPdv is saved", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-3", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-3", name: "T", foodCategory: "x", ownerEmail: "owner-wiring-teste-3@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await PATCH(
       new Request("http://x", { method: "PATCH", body: JSON.stringify({ tableCount: 10, hasPdv: true }), ...hostFor("wiring-teste-3") }),
@@ -48,7 +51,7 @@ describe("step wiring via settings route", () => {
   });
 
   it("marks step2PaymentDone when a bank account is created", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-4", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-4", name: "T", foodCategory: "x", ownerEmail: "owner-wiring-teste-4@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await createBankAccount(
       new Request("http://x", { method: "POST", body: JSON.stringify({ name: "Caixa" }), ...hostFor("wiring-teste-4") }),
@@ -59,7 +62,7 @@ describe("step wiring via settings route", () => {
   });
 
   it("marks step4DeliveryAreaDone when a delivery zone is created", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-5", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-5", name: "T", foodCategory: "x", ownerEmail: "owner-wiring-teste-5@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await createDeliveryZone(
       new Request("http://x", { method: "POST", body: JSON.stringify({ name: "Centro", feeCents: 500 }), ...hostFor("wiring-teste-5") }),
@@ -70,7 +73,7 @@ describe("step wiring via settings route", () => {
   });
 
   it("marks step5BotDone when a WhatsApp instance is created", async () => {
-    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-6", name: "T", foodCategory: "x" });
+    const { store } = await createStoreWithOnboarding({ slug: "wiring-teste-6", name: "T", foodCategory: "x", ownerEmail: "owner-wiring-teste-6@test.com", ownerPassword: "senha12345" });
     storeId = store.id;
     await createWhatsappInstance(
       new Request("http://x", { method: "POST", body: JSON.stringify({ evolutionInstanceName: `wa-${store.id}`, evolutionApiUrl: "https://exemplo.local", apiKey: "chave" }), ...hostFor("wiring-teste-6") }),

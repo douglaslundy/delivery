@@ -1,4 +1,5 @@
-import type { Store, StoreOnboardingProgress } from "@prisma/client";
+import type { Account, Store, StoreOnboardingProgress } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export type OnboardingStepKey =
@@ -15,7 +16,11 @@ export async function createStoreWithOnboarding(input: {
   slug: string;
   name: string;
   foodCategory?: string;
-}): Promise<{ store: Store; progress: StoreOnboardingProgress }> {
+  ownerEmail: string;
+  ownerPassword: string;
+}): Promise<{ store: Store; progress: StoreOnboardingProgress; account: Account }> {
+  const passwordHash = await bcrypt.hash(input.ownerPassword, 10);
+
   return prisma.$transaction(async (tx) => {
     const store = await tx.store.create({
       data: { slug: input.slug, name: input.name, foodCategory: input.foodCategory },
@@ -25,7 +30,15 @@ export async function createStoreWithOnboarding(input: {
       data: { storeId: store.id, step1EstablishmentDone: true },
     });
 
-    return { store, progress };
+    const account = await tx.account.create({
+      data: { email: input.ownerEmail, passwordHash },
+    });
+
+    await tx.storeMember.create({
+      data: { accountId: account.id, storeId: store.id, role: "OWNER" },
+    });
+
+    return { store, progress, account };
   });
 }
 
