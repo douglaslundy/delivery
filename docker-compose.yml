@@ -1,7 +1,14 @@
 # Deploy em VPS: copie .env.production.example para .env.production, preencha e rode
-# `docker compose up -d --build`. HTTPS com subdominio wildcard: ver Caddyfile.
+# `docker compose --env-file .env.production up -d --build`.
+# --env-file e obrigatorio: variaveis como ${DB_PASSWORD} usadas AQUI (fora de env_file:)
+# so sao substituidas se vierem do --env-file ou do ambiente do shell; `env_file:` nos
+# services abaixo so injeta variaveis DENTRO do container, nao alimenta esta substituicao.
+# HTTPS com subdominio wildcard: ver Caddyfile (TLS wildcard real exige plugin DNS-01,
+# nao incluso na imagem caddy:2-alpine padrao usada aqui — decidir provedor DNS no deploy real).
 # Nomes de rede/volume prefixados com delivery_ para nunca colidir com outros projetos
-# (ecomerce, sysdoc, etc.) na mesma VPS.
+# (ecomerce, sysdoc, etc.) na mesma VPS. ATENCAO: portas 80/443 do servico caddy sao
+# globais na VPS — confirmar que nenhum outro projeto (ecomerce, sysdoc) ja as usa
+# antes de subir este stack.
 services:
   db:
     image: postgres:16-alpine
@@ -63,6 +70,7 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
+        set -o pipefail
         while true; do
           pg_dump -h db -U delivery delivery | gzip > /backups/delivery-$$(date +%F).sql.gz || echo "backup falhou"
           find /backups -name '*.sql.gz' -mtime +7 -delete
@@ -75,6 +83,7 @@ services:
     restart: unless-stopped
     depends_on:
       - app
+    env_file: .env.production
     ports:
       - "80:80"
       - "443:443"

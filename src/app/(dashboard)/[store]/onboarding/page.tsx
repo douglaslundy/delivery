@@ -22,7 +22,6 @@ const STEPS: { key: keyof NonNullable<Progress>; label: string; href: string }[]
   { key: "step5BotDone", label: "Bot (WhatsApp)", href: "./marketing" },
   { key: "step6DeliveryTimeDone", label: "Tempo de entrega estimado", href: "./settings" },
   { key: "step7SalaoStructureDone", label: "Estrutura do salao", href: "./settings" },
-  { key: "step8ReviewDone", label: "Revisao final", href: "#" },
 ];
 
 export default function OnboardingPage() {
@@ -30,11 +29,18 @@ export default function OnboardingPage() {
   const storeId = params.store;
   const [progress, setProgress] = useState<Progress>(null);
 
-  useEffect(() => {
+  function reload() {
     fetch(`/api/stores/${storeId}/onboarding`)
       .then((res) => res.json())
       .then(setProgress);
-  }, [storeId]);
+  }
+
+  useEffect(reload, [storeId]);
+
+  async function finishReview() {
+    await fetch(`/api/stores/${storeId}/onboarding/complete-review`, { method: "POST" });
+    reload();
+  }
 
   return (
     <main>
@@ -46,6 +52,10 @@ export default function OnboardingPage() {
             {progress?.[step.key] ? "✓" : "○"} <a href={step.href}>{step.label}</a>
           </li>
         ))}
+        <li>
+          {progress?.step8ReviewDone ? "✓" : "○"} Revisao final{" "}
+          {!progress?.step8ReviewDone && <button onClick={finishReview}>Concluir revisao</button>}
+        </li>
       </ol>
     </main>
   );

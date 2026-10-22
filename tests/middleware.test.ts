@@ -11,4 +11,8 @@ describe("middleware matcher", () => {
   it("still covers an ordinary store API route", () => {
     expect(pattern.test("/api/stores/abc/orders")).toBe(true);
   });
+
+  it("excludes the Caddy on-demand TLS ask endpoint (called before any session/host exists)", () => {
+    expect(pattern.test("/api/tls-check")).toBe(false);
+  });
 });

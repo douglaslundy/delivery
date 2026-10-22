@@ -21,4 +21,12 @@ describe("createStoreWithOnboarding", () => {
     expect(progress.step3HoursDone).toBe(true);
     expect(progress.step4DeliveryAreaDone).toBe(false);
   });
+
+  it("markStepDone creates a progress row instead of silently doing nothing when one is missing", async () => {
+    const store = await prisma.store.create({ data: { slug: "loja-sem-progresso", name: "T" } });
+    storeId = store.id;
+    await markStepDone(storeId, "step4DeliveryAreaDone");
+    const progress = await prisma.storeOnboardingProgress.findUniqueOrThrow({ where: { storeId } });
+    expect(progress.step4DeliveryAreaDone).toBe(true);
+  });
 });

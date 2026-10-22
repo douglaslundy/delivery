@@ -1,12 +1,29 @@
-# Subdominio wildcard (*.PLATFORM_DOMAIN) para cada loja (tenant), TLS automatico via Caddy.
-# DNS: aponte um registro A/AAAA curinga (*.PLATFORM_DOMAIN) e o apex (PLATFORM_DOMAIN) para esta VPS.
+# TLS automatico, um subdominio por loja (tenant). Duas opcoes, escolher uma:
 #
-# IMPORTANTE: certificado wildcard real (*.dominio.com) via Let's Encrypt exige desafio DNS-01,
-# que precisa de um plugin de provedor DNS no build do Caddy (nao incluso na imagem caddy:2-alpine
-# padrao usada aqui). Sem esse plugin, Caddy emite certificado individual por subdominio acessado
-# (funciona, mas nao e tecnicamente "wildcard") — documentar/decidir o provedor DNS quando o
-# dominio real for escolhido.
+# 1) Padrao abaixo (on-demand TLS): Caddy emite um certificado individual por
+#    subdominio na primeira visita, perguntando ao app se o host e valido — nao
+#    precisa de DNS curinga nem de plugin. Mesmo padrao ja usado no projeto ecomerce.
+# 2) Certificado wildcard real (*.dominio.com) via desafio DNS-01: exige build do
+#    Caddy com plugin do provedor DNS (nao incluso na imagem caddy:2-alpine padrao
+#    usada aqui) — decidir o provedor quando o dominio real for escolhido.
+#
+# Teste local/LAN (ex. 192.168.0.233): Let's Encrypt nao alcanca IP privado — trocar
+# o bloco TLS por `tls internal` nesse caso.
 
-{$PLATFORM_DOMAIN:dominio.local}, *.{$PLATFORM_DOMAIN:dominio.local} {
+{
+	on_demand_tls {
+		ask http://app:3000/api/tls-check
+	}
+}
+
+https:// {
+	tls {
+		on_demand
+	}
+	header Strict-Transport-Security "max-age=31536000"
 	reverse_proxy app:3000
+}
+
+http:// {
+	redir https://{host}{uri} permanent
 }

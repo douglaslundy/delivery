@@ -8,6 +8,9 @@ type OrderForPrint = {
 
 type OrderItemForPrint = {
   productId: string;
+  // OrderItem only stores productId; the caller must resolve the product's
+  // name (e.g. join against Product) before calling this function.
+  productName: string;
   quantity: number;
   unitPriceCents: number;
   addons: { id: string; name: string; priceCents: number }[];
@@ -37,7 +40,7 @@ export function buildPrintPayload(order: OrderForPrint, items: OrderItemForPrint
       channel: order.channel,
       tableNumber: order.tableNumber,
       items: items.map((item) => ({
-        name: item.productId,
+        name: item.productName,
         quantity: item.quantity,
         unitPriceCents: item.unitPriceCents,
         addons: item.addons.map((a) => a.name),

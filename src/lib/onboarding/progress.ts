@@ -46,11 +46,13 @@ export function canAccessDashboard(progress: StoreOnboardingProgress): boolean {
 }
 
 export async function markStepDone(storeId: string, step: OnboardingStepKey): Promise<void> {
-  // updateMany (not update) so this is a no-op for stores with no progress row
-  // (e.g. created before onboarding tracking existed, or in tests that create
-  // a bare Store directly) instead of throwing.
-  await prisma.storeOnboardingProgress.updateMany({
+  // upsert (not update) so a store with no progress row yet (e.g. created
+  // before onboarding tracking existed, or in a test that creates a bare
+  // Store directly) gets one instead of silently losing the step completion.
+  // Step 1 is true by definition once the store exists.
+  await prisma.storeOnboardingProgress.upsert({
     where: { storeId },
-    data: { [step]: true },
+    create: { storeId, step1EstablishmentDone: true, [step]: true },
+    update: { [step]: true },
   });
 }

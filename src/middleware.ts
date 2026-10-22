@@ -35,5 +35,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   runtime: "nodejs",
-  matcher: ["/((?!api/auth(?:/|$)|api/webhooks(?:/|$)|login(?:/|$)|onboarding(?:/|$)|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api/auth(?:/|$)|api/webhooks(?:/|$)|api/tls-check(?:/|$)|login(?:/|$)|onboarding(?:/|$)|_next/static|_next/image|favicon.ico).*)"],
 };
