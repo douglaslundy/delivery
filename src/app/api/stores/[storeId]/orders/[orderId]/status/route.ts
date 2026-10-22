@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 import { canTransition } from "@/lib/orders/stateMachine";
 import { publishOrderEvent } from "@/lib/orders/publishOrderEvent";
+import { recordOrderCompletion } from "@/lib/finance/recordOrderCompletion";
 
 export async function PATCH(
   request: Request,
@@ -49,6 +50,10 @@ export async function PATCH(
 
   if (!updated) {
     return NextResponse.json({ error: "order status changed concurrently" }, { status: 409 });
+  }
+
+  if (body.status === "COMPLETED") {
+    await recordOrderCompletion(storeId, updated);
   }
 
   publishOrderEvent(storeId, updated);
