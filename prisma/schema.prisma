@@ -33,6 +33,14 @@ model Store {
   bankAccounts      BankAccount[]
   financeEntries    FinanceEntry[]
   fiscalDocuments   FiscalDocument[]
+  coupons           Coupon[]
+  cashbackLedgers   CashbackLedger[]
+  loyaltyProgram    LoyaltyProgram?
+  customerFeedbacks CustomerFeedback[]
+  supportTickets    SupportTicket[]
+  whatsappInstance  WhatsappInstance?
+  deliveryPeople    DeliveryPerson[]
+  deliveryZones     DeliveryZone[]
 }
 
 model StoreDomain {
@@ -274,4 +282,104 @@ model FiscalDocument {
 
   @@index([storeId])
   @@index([orderId])
+}
+
+model Coupon {
+  id            String   @id @default(cuid())
+  storeId       String
+  code          String
+  kind          String
+  value         Int
+  active        Boolean  @default(true)
+  expiresAt     DateTime?
+  usageLimit    Int?
+  store         Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, code])
+  @@index([storeId])
+}
+
+model CashbackLedger {
+  id          String   @id @default(cuid())
+  storeId     String
+  customerId  String
+  orderId     String?
+  amountCents Int
+  createdAt   DateTime @default(now())
+
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, customerId])
+}
+
+model LoyaltyProgram {
+  id                    String  @id @default(cuid())
+  storeId               String
+  pointsPerCurrencyUnit Int     @default(1)
+  redemptionRuleCents   Int
+  active                Boolean @default(true)
+  store                 Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId])
+}
+
+model CustomerFeedback {
+  id        String   @id @default(cuid())
+  storeId   String
+  orderId   String?
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  storeId     String
+  customerId  String?
+  subject     String
+  status      String
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, status])
+}
+
+model WhatsappInstance {
+  id                    String  @id @default(cuid())
+  storeId               String
+  evolutionInstanceName String
+  evolutionApiUrl       String
+  apiKeyEncrypted       String
+  phoneNumber           String?
+  connected             Boolean @default(false)
+  store                 Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId])
+}
+
+model DeliveryPerson {
+  id        String   @id @default(cuid())
+  storeId   String
+  name      String
+  phone     String
+  active    Boolean  @default(true)
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+model DeliveryZone {
+  id       String @id @default(cuid())
+  storeId  String
+  name     String
+  feeCents Int
+  store    Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
 }
