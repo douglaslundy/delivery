@@ -22,3 +22,14 @@ export function canTransition(current: OrderStatus, next: OrderStatus, channel: 
 
   return currentIndex !== -1 && nextIndex === currentIndex + 1;
 }
+
+export function nextStatus(current: OrderStatus, channel: OrderChannel): OrderStatus | null {
+  if (current === "COMPLETED" || current === "CANCELED") {
+    return null;
+  }
+
+  const sequence = SEQUENCES[channel];
+  const currentIndex = sequence.indexOf(current);
+
+  return sequence[currentIndex + 1] ?? null;
+}

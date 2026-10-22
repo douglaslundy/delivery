@@ -1,5 +1,4 @@
 import { createServer } from "node:http";
-import { parse } from "node:url";
 import next from "next";
 import { createRealtimeServer } from "@/server/realtime";
 
@@ -10,7 +9,7 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
-    handle(req, res, parse(req.url ?? "", true));
+    handle(req, res);
   });
 
   createRealtimeServer(httpServer);

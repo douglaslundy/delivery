@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { canTransition } from "@/lib/orders/stateMachine";
+import { canTransition, nextStatus } from "@/lib/orders/stateMachine";
 
 describe("canTransition", () => {
   it("allows the linear PDV path", () => {
@@ -31,5 +31,22 @@ describe("canTransition", () => {
   it("rejects any transition out of a terminal state", () => {
     expect(canTransition("COMPLETED", "CANCELED", "PDV")).toBe(false);
     expect(canTransition("CANCELED", "RECEIVED", "PDV")).toBe(false);
+  });
+});
+
+describe("nextStatus", () => {
+  it("returns the immediate next status in the channel's sequence", () => {
+    expect(nextStatus("RECEIVED", "PDV")).toBe("CONFIRMED");
+    expect(nextStatus("READY", "DELIVERY")).toBe("OUT_FOR_DELIVERY");
+  });
+
+  it("returns null for a terminal state", () => {
+    expect(nextStatus("COMPLETED", "PDV")).toBeNull();
+    expect(nextStatus("CANCELED", "PDV")).toBeNull();
+  });
+
+  it("returns null at the end of the sequence", () => {
+    expect(nextStatus("READY", "PDV")).toBe("COMPLETED");
+    expect(nextStatus("COMPLETED", "DELIVERY")).toBeNull();
   });
 });
