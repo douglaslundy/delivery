@@ -6,6 +6,7 @@ import { canTransition } from "@/lib/orders/stateMachine";
 import { publishOrderEvent } from "@/lib/orders/publishOrderEvent";
 import { recordOrderCompletion } from "@/lib/finance/recordOrderCompletion";
 import { awardLoyaltyPointsForOrder } from "@/lib/marketing/loyaltyPoints";
+import { sendOrderStatusNotification } from "@/lib/whatsapp/notifications";
 
 export async function PATCH(
   request: Request,
@@ -61,6 +62,11 @@ export async function PATCH(
   }
 
   publishOrderEvent(storeId, updated);
+
+  // Fire-and-forget: a WhatsApp/network failure must not fail the status update itself.
+  sendOrderStatusNotification(storeId, updated).catch((error) => {
+    console.error(`failed to send WhatsApp order status notification for order ${orderId}`, error);
+  });
 
   return NextResponse.json(updated);
 }
