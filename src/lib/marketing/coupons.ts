@@ -1,14 +1,17 @@
+import type { Coupon, Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import type { Coupon } from "@prisma/client";
 
 export class CouponError extends Error {}
+
+type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
 
 export async function validateAndPriceCoupon(
   storeId: string,
   code: string,
   subtotalCents: number,
+  client: PrismaClientOrTx = prisma,
 ): Promise<{ coupon: Coupon; discountCents: number }> {
-  const coupon = await prisma.coupon.findUnique({ where: { storeId_code: { storeId, code } } });
+  const coupon = await client.coupon.findUnique({ where: { storeId_code: { storeId, code } } });
 
   if (!coupon) throw new CouponError("coupon not found");
   if (!coupon.active) throw new CouponError("coupon is not active");

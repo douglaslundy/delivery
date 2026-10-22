@@ -46,4 +46,12 @@ describe("createOrder", () => {
     const item = await prisma.orderItem.findFirstOrThrow({ where: { orderId: order.id } });
     expect(item.addons).toEqual([]);
   });
+
+  it("applies a coupon discount and decrements its usage limit", async () => {
+    const coupon = await prisma.coupon.create({ data: { storeId, code: "APLICA", kind: "FIXED", value: 200, usageLimit: 1 } });
+    const order = await createOrder(storeId, { channel: "PDV", items: [{ productId, quantity: 1, selectedAddonIds: [] }], couponCode: "APLICA" } as any);
+    expect(order.discountCents).toBe(200);
+    const updated = await prisma.coupon.findUniqueOrThrow({ where: { id: coupon.id } });
+    expect(updated.usageLimit).toBe(0);
+  });
 });

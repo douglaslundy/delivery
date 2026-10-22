@@ -1,6 +1,7 @@
 import { Prisma, type Order } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateItemPrice, type LineItemSelection } from "@/lib/menu/pricing";
+import { validateAndPriceCoupon } from "@/lib/marketing/coupons";
 
 export type CreateOrderInput = {
   channel: "PDV" | "SALAO" | "DELIVERY" | "AGENDADO";
@@ -53,6 +54,19 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
   const subtotalCents = pricedItems.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
 
   return prisma.$transaction(async (tx) => {
+    let discountCents = 0;
+    let couponId: string | undefined;
+
+    if (input.couponCode) {
+      const { coupon, discountCents: priced } = await validateAndPriceCoupon(storeId, input.couponCode, subtotalCents, tx);
+      discountCents = priced;
+      couponId = coupon.id;
+
+      if (coupon.usageLimit !== null) {
+        await tx.coupon.update({ where: { id: coupon.id }, data: { usageLimit: coupon.usageLimit - 1 } });
+      }
+    }
+
     const order = await tx.order.create({
       data: {
         storeId,
@@ -63,7 +77,9 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
         deliveryAddress: input.deliveryAddress as Prisma.InputJsonValue | undefined,
         paymentMethod: input.paymentMethod,
         subtotalCents,
-        totalCents: subtotalCents,
+        discountCents,
+        couponId,
+        totalCents: subtotalCents - discountCents,
         items: { create: pricedItems },
       },
     });
