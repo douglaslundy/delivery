@@ -1,0 +1,12 @@
+# Subdominio wildcard (*.PLATFORM_DOMAIN) para cada loja (tenant), TLS automatico via Caddy.
+# DNS: aponte um registro A/AAAA curinga (*.PLATFORM_DOMAIN) e o apex (PLATFORM_DOMAIN) para esta VPS.
+#
+# IMPORTANTE: certificado wildcard real (*.dominio.com) via Let's Encrypt exige desafio DNS-01,
+# que precisa de um plugin de provedor DNS no build do Caddy (nao incluso na imagem caddy:2-alpine
+# padrao usada aqui). Sem esse plugin, Caddy emite certificado individual por subdominio acessado
+# (funciona, mas nao e tecnicamente "wildcard") — documentar/decidir o provedor DNS quando o
+# dominio real for escolhido.
+
+{$PLATFORM_DOMAIN:dominio.local}, *.{$PLATFORM_DOMAIN:dominio.local} {
+	reverse_proxy app:3000
+}

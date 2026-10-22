@@ -1,0 +1,91 @@
+# Deploy em VPS: copie .env.production.example para .env.production, preencha e rode
+# `docker compose up -d --build`. HTTPS com subdominio wildcard: ver Caddyfile.
+# Nomes de rede/volume prefixados com delivery_ para nunca colidir com outros projetos
+# (ecomerce, sysdoc, etc.) na mesma VPS.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: delivery
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: delivery
+    volumes:
+      - delivery_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delivery"]
+      interval: 5s
+      retries: 10
+    networks:
+      - delivery_net
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://delivery:${DB_PASSWORD}@db:5432/delivery
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3600}:3000"
+    networks:
+      - delivery_net
+  # Jobs agendados: recuperador de vendas (marketing), lembretes de conta a pagar (financeiro).
+  # Entrypoint usa um loop simples de curl, mesmo padrao do ecomerce — sem scheduler externo decidido.
+  cron:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - app
+    env_file: .env.production
+    environment:
+      DATABASE_URL: postgresql://delivery:${DB_PASSWORD}@db:5432/delivery
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          sleep 86400
+          echo "cron: recuperador de vendas e lembretes ainda nao tem endpoint HTTP dedicado — placeholder"
+        done
+    networks:
+      - delivery_net
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - delivery_backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          pg_dump -h db -U delivery delivery | gzip > /backups/delivery-$$(date +%F).sql.gz || echo "backup falhou"
+          find /backups -name '*.sql.gz' -mtime +7 -delete
+          sleep 86400
+        done
+    networks:
+      - delivery_net
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - delivery_caddy_data:/data
+    networks:
+      - delivery_net
+networks:
+  delivery_net:
+volumes:
+  delivery_db_data:
+  delivery_backups:
+  delivery_caddy_data:
