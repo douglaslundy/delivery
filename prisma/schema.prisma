@@ -41,6 +41,7 @@ model Store {
   coupons           Coupon[]
   cashbackLedgers   CashbackLedger[]
   loyaltyProgram    LoyaltyProgram?
+  loyaltyPointsLedgers LoyaltyPointsLedger[]
   customerFeedbacks CustomerFeedback[]
   supportTickets    SupportTicket[]
   whatsappInstance  WhatsappInstance?
@@ -327,6 +328,19 @@ model LoyaltyProgram {
   store                 Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@unique([storeId])
+}
+
+model LoyaltyPointsLedger {
+  id        String   @id @default(cuid())
+  storeId   String
+  customerId String
+  orderId   String?
+  points    Int
+  createdAt DateTime @default(now())
+
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, customerId])
 }
 
 model CustomerFeedback {

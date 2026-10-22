@@ -5,6 +5,7 @@ import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 import { canTransition } from "@/lib/orders/stateMachine";
 import { publishOrderEvent } from "@/lib/orders/publishOrderEvent";
 import { recordOrderCompletion } from "@/lib/finance/recordOrderCompletion";
+import { awardLoyaltyPointsForOrder } from "@/lib/marketing/loyaltyPoints";
 
 export async function PATCH(
   request: Request,
@@ -49,6 +50,7 @@ export async function PATCH(
 
     if (body.status === "COMPLETED") {
       await recordOrderCompletion(storeId, result, tx);
+      await awardLoyaltyPointsForOrder(storeId, result, tx);
     }
 
     return result;

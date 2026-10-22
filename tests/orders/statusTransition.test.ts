@@ -47,4 +47,20 @@ describe("order status transition endpoint", () => {
     const events = await prisma.orderStatusEvent.findMany({ where: { orderId, status: "CONFIRMED" } });
     expect(events).toHaveLength(1);
   });
+
+  it("awards loyalty points when a customer order completes with an active loyalty program", async () => {
+    await prisma.loyaltyProgram.create({ data: { storeId, pointsPerCurrencyUnit: 1, redemptionRuleCents: 1000 } });
+    const order = await prisma.order.create({
+      data: { storeId, channel: "PDV", status: "READY", customerId: "cliente-1", subtotalCents: 2000, totalCents: 2000 },
+    });
+
+    const res = await PATCH(
+      new Request("http://x", { method: "PATCH", body: JSON.stringify({ status: "COMPLETED" }), ...hostFor("status-teste") }),
+      { params: { storeId, orderId: order.id } } as any,
+    );
+    expect(res.status).toBe(200);
+
+    const ledger = await prisma.loyaltyPointsLedger.findFirst({ where: { storeId, orderId: order.id } });
+    expect(ledger?.points).toBe(20);
+  });
 });
