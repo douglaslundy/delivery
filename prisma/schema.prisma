@@ -41,6 +41,7 @@ model Store {
   whatsappInstance  WhatsappInstance?
   deliveryPeople    DeliveryPerson[]
   deliveryZones     DeliveryZone[]
+  onboardingProgress StoreOnboardingProgress?
 }
 
 model StoreDomain {
@@ -382,4 +383,20 @@ model DeliveryZone {
   store    Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
+}
+
+model StoreOnboardingProgress {
+  id                      String    @id @default(cuid())
+  storeId                 String    @unique
+  step1EstablishmentDone  Boolean   @default(false)
+  step2PaymentDone        Boolean   @default(false)
+  step3HoursDone          Boolean   @default(false)
+  step4DeliveryAreaDone   Boolean   @default(false)
+  step5BotDone            Boolean   @default(false)
+  step6DeliveryTimeDone   Boolean   @default(false)
+  step7SalaoStructureDone Boolean   @default(false)
+  step8ReviewDone         Boolean   @default(false)
+  completedAt             DateTime?
+
+  store                   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
