@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
+import { validateCouponInput } from "@/lib/marketing/validateCouponInput";
 
 const ALLOWED_FIELDS = ["active", "expiresAt", "usageLimit", "value"] as const;
 
@@ -24,6 +25,16 @@ export async function PATCH(
   }
 
   const body = await request.json();
+
+  const existing = await prisma.coupon.findFirst({ where: { id: couponId, storeId } });
+  if (!existing) {
+    return NextResponse.json({ error: "not found" }, { status: 404 });
+  }
+
+  const error = validateCouponInput(body, false, existing.kind);
+  if (error) {
+    return NextResponse.json({ error }, { status: 400 });
+  }
 
   const { count } = await prisma.coupon.updateMany({
     where: { id: couponId, storeId },

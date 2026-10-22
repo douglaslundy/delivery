@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
+import { validateCouponInput } from "@/lib/marketing/validateCouponInput";
 
 export async function GET(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params;
@@ -20,8 +21,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
 
   const body = await request.json();
 
-  if (body.kind !== "PERCENT" && body.kind !== "FIXED") {
-    return NextResponse.json({ error: "kind must be PERCENT or FIXED" }, { status: 400 });
+  const error = validateCouponInput(body, true);
+  if (error) {
+    return NextResponse.json({ error }, { status: 400 });
   }
 
   const coupon = await prisma.coupon.create({

@@ -22,4 +22,10 @@ describe("validateAndPriceCoupon", () => {
     await prisma.coupon.create({ data: { storeId, code: "LIMITE", kind: "FIXED", value: 100, usageLimit: 0 } });
     await expect(validateAndPriceCoupon(storeId, "LIMITE", 10000)).rejects.toThrow(CouponError);
   });
+
+  it("caps a percent coupon's discount at the subtotal even if value is above 100", async () => {
+    await prisma.coupon.create({ data: { storeId, code: "ABUSO", kind: "PERCENT", value: 150 } });
+    const { discountCents } = await validateAndPriceCoupon(storeId, "ABUSO", 10000);
+    expect(discountCents).toBe(10000);
+  });
 });

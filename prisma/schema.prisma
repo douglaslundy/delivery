@@ -353,7 +353,7 @@ model SupportTicket {
 model WhatsappInstance {
   id                    String  @id @default(cuid())
   storeId               String
-  evolutionInstanceName String
+  evolutionInstanceName String  @unique
   evolutionApiUrl       String
   apiKeyEncrypted       String
   phoneNumber           String?

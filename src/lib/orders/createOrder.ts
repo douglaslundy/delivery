@@ -1,7 +1,7 @@
 import { Prisma, type Order } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateItemPrice, type LineItemSelection } from "@/lib/menu/pricing";
-import { validateAndPriceCoupon } from "@/lib/marketing/coupons";
+import { validateAndPriceCoupon, CouponError } from "@/lib/marketing/coupons";
 
 export type CreateOrderInput = {
   channel: "PDV" | "SALAO" | "DELIVERY" | "AGENDADO";
@@ -63,7 +63,13 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
       couponId = coupon.id;
 
       if (coupon.usageLimit !== null) {
-        await tx.coupon.update({ where: { id: coupon.id }, data: { usageLimit: coupon.usageLimit - 1 } });
+        const { count } = await tx.coupon.updateMany({
+          where: { id: coupon.id, usageLimit: { gt: 0 } },
+          data: { usageLimit: { decrement: 1 } },
+        });
+        if (count === 0) {
+          throw new CouponError("coupon usage limit reached");
+        }
       }
     }
 

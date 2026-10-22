@@ -18,10 +18,8 @@ export async function validateAndPriceCoupon(
   if (coupon.expiresAt && coupon.expiresAt < new Date()) throw new CouponError("coupon has expired");
   if (coupon.usageLimit !== null && coupon.usageLimit <= 0) throw new CouponError("coupon usage limit reached");
 
-  const discountCents =
-    coupon.kind === "PERCENT"
-      ? Math.round((subtotalCents * coupon.value) / 100)
-      : Math.min(coupon.value, subtotalCents);
+  const rawDiscountCents = coupon.kind === "PERCENT" ? Math.round((subtotalCents * coupon.value) / 100) : coupon.value;
+  const discountCents = Math.min(rawDiscountCents, subtotalCents);
 
   return { coupon, discountCents };
 }

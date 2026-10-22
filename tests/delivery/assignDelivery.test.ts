@@ -15,4 +15,9 @@ describe("assignDelivery", () => {
   it("rejects assigning a delivery person from another store", async () => {
     await expect(assignDelivery(storeA, orderId, deliveryPersonBId)).rejects.toThrow();
   });
+
+  it("rejects assigning a delivery person to an order from another store", async () => {
+    const personA = await prisma.deliveryPerson.create({ data: { storeId: storeA, name: "Maria", phone: "11988888888" } });
+    await expect(assignDelivery(storeB, orderId, personA.id)).rejects.toThrow();
+  });
 });

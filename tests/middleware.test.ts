@@ -1,0 +1,14 @@
+import { describe, it, expect } from "vitest";
+import { config } from "@/middleware";
+
+describe("middleware matcher", () => {
+  const pattern = new RegExp(`^${config.matcher[0]}$`);
+
+  it("excludes the evolution webhook (no session/host guard applies there)", () => {
+    expect(pattern.test("/api/webhooks/evolution")).toBe(false);
+  });
+
+  it("still covers an ordinary store API route", () => {
+    expect(pattern.test("/api/stores/abc/orders")).toBe(true);
+  });
+});
