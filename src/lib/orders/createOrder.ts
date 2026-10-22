@@ -1,4 +1,4 @@
-import type { Order } from "@prisma/client";
+import { Prisma, type Order } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calculateItemPrice, type LineItemSelection } from "@/lib/menu/pricing";
 
@@ -56,7 +56,7 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
         tableNumber: input.tableNumber,
         scheduledFor: input.scheduledFor,
         customerId: input.customerId,
-        deliveryAddress: input.deliveryAddress,
+        deliveryAddress: input.deliveryAddress as Prisma.InputJsonValue | undefined,
         paymentMethod: input.paymentMethod,
         subtotalCents,
         totalCents: subtotalCents,
