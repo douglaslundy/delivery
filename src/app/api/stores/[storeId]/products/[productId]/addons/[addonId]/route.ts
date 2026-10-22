@@ -3,12 +3,13 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { storeId: string; productId: string; addonId: string } },
+  { params }: { params: Promise<{ storeId: string; productId: string; addonId: string }> },
 ) {
+  const { storeId, productId, addonId } = await params;
   const body = await request.json();
 
   const { count } = await prisma.productAddon.updateMany({
-    where: { id: params.addonId, storeId: params.storeId, productId: params.productId },
+    where: { id: addonId, storeId, productId },
     data: body,
   });
 
@@ -16,16 +17,18 @@ export async function PATCH(
     return NextResponse.json({ error: "not found" }, { status: 404 });
   }
 
-  const addon = await prisma.productAddon.findUnique({ where: { id: params.addonId } });
+  const addon = await prisma.productAddon.findUnique({ where: { id: addonId } });
   return NextResponse.json(addon);
 }
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { storeId: string; productId: string; addonId: string } },
+  { params }: { params: Promise<{ storeId: string; productId: string; addonId: string }> },
 ) {
+  const { storeId, productId, addonId } = await params;
+
   const { count } = await prisma.productAddon.deleteMany({
-    where: { id: params.addonId, storeId: params.storeId, productId: params.productId },
+    where: { id: addonId, storeId, productId },
   });
 
   if (count === 0) {

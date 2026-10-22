@@ -4,13 +4,14 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { storeId: string; categoryId: string } },
+  { params }: { params: Promise<{ storeId: string; categoryId: string }> },
 ) {
+  const { storeId, categoryId } = await params;
   const body = await request.json();
 
   try {
     const category = await prisma.category.update({
-      where: { storeId_id: { storeId: params.storeId, id: params.categoryId } },
+      where: { storeId_id: { storeId, id: categoryId } },
       data: body,
     });
 
@@ -25,11 +26,13 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { storeId: string; categoryId: string } },
+  { params }: { params: Promise<{ storeId: string; categoryId: string }> },
 ) {
+  const { storeId, categoryId } = await params;
+
   try {
     await prisma.category.delete({
-      where: { storeId_id: { storeId: params.storeId, id: params.categoryId } },
+      where: { storeId_id: { storeId, id: categoryId } },
     });
 
     return new NextResponse(null, { status: 204 });

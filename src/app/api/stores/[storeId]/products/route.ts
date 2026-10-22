@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(request: Request, { params }: { params: { storeId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
+  const { storeId } = await params;
   const { searchParams } = new URL(request.url);
   const active = searchParams.get("active");
 
   const products = await prisma.product.findMany({
     where: {
-      storeId: params.storeId,
+      storeId,
       ...(active === "true" ? { active: true } : {}),
     },
     orderBy: { position: "asc" },
@@ -16,7 +17,8 @@ export async function GET(request: Request, { params }: { params: { storeId: str
   return NextResponse.json(products);
 }
 
-export async function POST(request: Request, { params }: { params: { storeId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
+  const { storeId } = await params;
   const body = await request.json();
 
   if (typeof body.name !== "string" || body.name.trim() === "") {
@@ -29,7 +31,7 @@ export async function POST(request: Request, { params }: { params: { storeId: st
 
   const product = await prisma.product.create({
     data: {
-      storeId: params.storeId,
+      storeId,
       name: body.name,
       categoryId: body.categoryId ?? null,
       description: body.description ?? "",

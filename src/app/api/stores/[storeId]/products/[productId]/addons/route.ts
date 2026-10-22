@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { storeId: string; productId: string } },
+  { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
+  const { storeId, productId } = await params;
   const addons = await prisma.productAddon.findMany({
-    where: { storeId: params.storeId, productId: params.productId },
+    where: { storeId, productId },
     orderBy: { position: "asc" },
   });
 
@@ -21,8 +22,9 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { storeId: string; productId: string } },
+  { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
+  const { storeId, productId } = await params;
   const body = await request.json();
 
   if (typeof body.groupName !== "string" || body.groupName.trim() === "") {
@@ -34,8 +36,8 @@ export async function POST(
 
   const addon = await prisma.productAddon.create({
     data: {
-      storeId: params.storeId,
-      productId: params.productId,
+      storeId,
+      productId,
       groupName: body.groupName,
       name: body.name,
       priceCents: body.priceCents ?? 0,

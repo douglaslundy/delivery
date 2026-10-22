@@ -4,8 +4,9 @@ import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { storeId: string; productId: string } },
+  { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
+  const { storeId, productId } = await params;
   const body = await request.json();
 
   if ("priceCents" in body && (typeof body.priceCents !== "number" || !Number.isInteger(body.priceCents) || body.priceCents <= 0)) {
@@ -14,7 +15,7 @@ export async function PATCH(
 
   try {
     const product = await prisma.product.update({
-      where: { storeId_id: { storeId: params.storeId, id: params.productId } },
+      where: { storeId_id: { storeId, id: productId } },
       data: body,
     });
 
@@ -29,11 +30,13 @@ export async function PATCH(
 
 export async function DELETE(
   _request: Request,
-  { params }: { params: { storeId: string; productId: string } },
+  { params }: { params: Promise<{ storeId: string; productId: string }> },
 ) {
+  const { storeId, productId } = await params;
+
   try {
     await prisma.product.delete({
-      where: { storeId_id: { storeId: params.storeId, id: params.productId } },
+      where: { storeId_id: { storeId, id: productId } },
     });
 
     return new NextResponse(null, { status: 204 });
