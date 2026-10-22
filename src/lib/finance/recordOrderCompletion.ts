@@ -1,10 +1,17 @@
+import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
-export async function recordOrderCompletion(storeId: string, order: { id: string; totalCents: number }) {
-  const existing = await prisma.financeEntry.findFirst({ where: { storeId, orderId: order.id } });
+type PrismaClientOrTx = PrismaClient | Prisma.TransactionClient;
+
+export async function recordOrderCompletion(
+  storeId: string,
+  order: { id: string; totalCents: number },
+  client: PrismaClientOrTx = prisma,
+) {
+  const existing = await client.financeEntry.findFirst({ where: { storeId, orderId: order.id } });
   if (existing) return existing;
 
-  return prisma.financeEntry.create({
+  return client.financeEntry.create({
     data: {
       storeId,
       orderId: order.id,

@@ -45,15 +45,17 @@ export async function PATCH(
       data: { storeId, orderId, status: body.status },
     });
 
-    return tx.order.findUniqueOrThrow({ where: { storeId_id: { storeId, id: orderId } } });
+    const result = await tx.order.findUniqueOrThrow({ where: { storeId_id: { storeId, id: orderId } } });
+
+    if (body.status === "COMPLETED") {
+      await recordOrderCompletion(storeId, result, tx);
+    }
+
+    return result;
   });
 
   if (!updated) {
     return NextResponse.json({ error: "order status changed concurrently" }, { status: 409 });
-  }
-
-  if (body.status === "COMPLETED") {
-    await recordOrderCompletion(storeId, updated);
   }
 
   publishOrderEvent(storeId, updated);

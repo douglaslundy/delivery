@@ -2,18 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
-
-const ALLOWED_FIELDS = ["kind", "amountCents", "description", "categoryId", "bankAccountId", "dueDate", "paidAt"] as const;
-
-function pickAllowedFields(body: Record<string, unknown>) {
-  const data: Record<string, unknown> = {};
-  for (const field of ALLOWED_FIELDS) {
-    if (field in body) {
-      data[field] = body[field];
-    }
-  }
-  return data;
-}
+import { pickAllowedEntryFields, validateEntryInput } from "@/lib/finance/validateEntryInput";
 
 export async function GET(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params;
@@ -33,8 +22,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
 
   const body = await request.json();
 
+  const error = await validateEntryInput(storeId, body);
+  if (error) {
+    return NextResponse.json({ error }, { status: 400 });
+  }
+
   const entry = await prisma.financeEntry.create({
-    data: { storeId, orderId: null, ...pickAllowedFields(body) } as Prisma.FinanceEntryUncheckedCreateInput,
+    data: { storeId, orderId: null, ...pickAllowedEntryFields(body) } as Prisma.FinanceEntryUncheckedCreateInput,
   });
 
   return NextResponse.json(entry, { status: 201 });

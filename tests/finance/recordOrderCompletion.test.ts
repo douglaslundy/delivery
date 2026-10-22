@@ -24,4 +24,16 @@ describe("recordOrderCompletion", () => {
     const entries = await prisma.financeEntry.findMany({ where: { orderId } });
     expect(entries).toHaveLength(1);
   });
+
+  it("participates in the caller's transaction (rollback undoes the entry)", async () => {
+    await prisma
+      .$transaction(async (tx) => {
+        await recordOrderCompletion(storeId, { id: orderId, totalCents: 2000 } as any, tx);
+        throw new Error("force rollback");
+      })
+      .catch(() => {});
+
+    const entries = await prisma.financeEntry.findMany({ where: { orderId } });
+    expect(entries).toHaveLength(0);
+  });
 });

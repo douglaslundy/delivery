@@ -9,7 +9,8 @@ describe("calculateAccountBalance", () => {
     accountId = (await prisma.bankAccount.create({ data: { storeId, name: "Caixa", initialBalanceCents: 10000 } })).id;
     await prisma.financeEntry.create({ data: { storeId, bankAccountId: accountId, kind: "INCOME", amountCents: 5000, description: "Venda", paidAt: new Date() } });
     await prisma.financeEntry.create({ data: { storeId, bankAccountId: accountId, kind: "EXPENSE", amountCents: 2000, description: "Compra", paidAt: new Date() } });
-    await prisma.financeEntry.create({ data: { storeId, kind: "INCOME", amountCents: 999999, description: "Nao pago" } }); // no bankAccountId, unpaid — must not count
+    // paid but tied to no bank account — must not count toward this account's balance
+    await prisma.financeEntry.create({ data: { storeId, kind: "INCOME", amountCents: 999999, description: "Sem conta", paidAt: new Date() } });
   });
   afterEach(async () => { await prisma.store.delete({ where: { id: storeId } }); });
 

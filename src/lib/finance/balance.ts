@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 export async function calculateAccountBalance(storeId: string, bankAccountId: string, asOf: Date = new Date()): Promise<number> {
-  const account = await prisma.bankAccount.findUniqueOrThrow({ where: { id: bankAccountId } });
+  const account = await prisma.bankAccount.findFirstOrThrow({ where: { id: bankAccountId, storeId } });
 
   const entries = await prisma.financeEntry.findMany({
     where: { storeId, bankAccountId, paidAt: { lte: asOf, not: null } },

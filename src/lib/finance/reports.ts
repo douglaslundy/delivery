@@ -1,10 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import type { OrderChannel } from "@prisma/client";
 
-function startOfDay(date: Date): Date {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  return start;
+export function startOfDayInTimezone(date: Date, timeZone: string): Date {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(date).map((p) => [p.type, p.value]));
+  const hour = parts.hour === "24" ? 0 : Number(parts.hour);
+
+  const wallClockAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), hour, Number(parts.minute), Number(parts.second));
+  const offsetMs = wallClockAsUtc - date.getTime();
+
+  const localMidnightAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), 0, 0, 0);
+  return new Date(localMidnightAsUtc - offsetMs);
 }
 
 export async function cashFlowReport(storeId: string, { from, to }: { from: Date; to: Date }) {
@@ -23,7 +38,8 @@ export async function cashFlowReport(storeId: string, { from, to }: { from: Date
 }
 
 export async function payablesReceivablesReport(storeId: string, { asOf }: { asOf: Date }) {
-  const boundary = startOfDay(asOf);
+  const store = await prisma.store.findUniqueOrThrow({ where: { id: storeId } });
+  const boundary = startOfDayInTimezone(asOf, store.timezone);
 
   const entries = await prisma.financeEntry.findMany({
     where: { storeId, paidAt: null },
