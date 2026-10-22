@@ -3,6 +3,10 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
+export function requiresStoreSelection(session: { storeId: string | null; availableStoreIds: string[] }): boolean {
+  return session.storeId === null && session.availableStoreIds.length > 1;
+}
+
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
