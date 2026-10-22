@@ -29,6 +29,10 @@ model Store {
   classifications ProductClassification[]
   productAddons   ProductAddon[]
   orders          Order[]
+  financeCategories FinanceCategory[]
+  bankAccounts      BankAccount[]
+  financeEntries    FinanceEntry[]
+  fiscalDocuments   FiscalDocument[]
 }
 
 model StoreDomain {
@@ -212,5 +216,62 @@ model OrderStatusEvent {
 
   order     Order       @relation(fields: [storeId, orderId], references: [storeId, id], onDelete: Cascade)
 
+  @@index([orderId])
+}
+
+model FinanceCategory {
+  id      String @id @default(cuid())
+  storeId String
+  name    String
+  kind    String
+
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+model BankAccount {
+  id                  String @id @default(cuid())
+  storeId             String
+  name                String
+  initialBalanceCents Int    @default(0)
+
+  store               Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+}
+
+model FinanceEntry {
+  id            String    @id @default(cuid())
+  storeId       String
+  bankAccountId String?
+  categoryId    String?
+  orderId       String?
+  kind          String
+  amountCents   Int
+  dueDate       DateTime?
+  paidAt        DateTime?
+  description   String
+  createdAt     DateTime  @default(now())
+
+  store         Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, dueDate])
+  @@index([storeId, paidAt])
+}
+
+model FiscalDocument {
+  id          String    @id @default(cuid())
+  storeId     String
+  orderId     String
+  kind        String
+  status      String
+  providerRef String?
+  issuedAt    DateTime?
+  createdAt   DateTime  @default(now())
+
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
   @@index([orderId])
 }
