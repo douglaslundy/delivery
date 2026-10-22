@@ -30,7 +30,10 @@ export async function createStoreWithOnboarding(input: {
 }
 
 export async function markStepDone(storeId: string, step: OnboardingStepKey): Promise<void> {
-  await prisma.storeOnboardingProgress.update({
+  // updateMany (not update) so this is a no-op for stores with no progress row
+  // (e.g. created before onboarding tracking existed, or in tests that create
+  // a bare Store directly) instead of throwing.
+  await prisma.storeOnboardingProgress.updateMany({
     where: { storeId },
     data: { [step]: true },
   });

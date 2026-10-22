@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
+import { markStepDone } from "@/lib/onboarding/progress";
 
 export async function GET(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params;
@@ -23,6 +24,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
   const zone = await prisma.deliveryZone.create({
     data: { storeId, name: body.name, feeCents: body.feeCents },
   });
+
+  await markStepDone(storeId, "step4DeliveryAreaDone");
 
   return NextResponse.json(zone, { status: 201 });
 }

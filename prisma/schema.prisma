@@ -18,6 +18,10 @@ model Store {
   slug      String   @unique
   name      String
   foodCategory String?
+  businessHours Json?
+  estimatedDeliveryMinutes Int?
+  tableCount Int?
+  hasPdv    Boolean  @default(false)
   active    Boolean  @default(true)
   timezone  String   @default("America/Sao_Paulo")
   currency  String   @default("BRL")
