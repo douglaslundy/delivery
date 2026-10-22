@@ -29,6 +29,22 @@ export async function createStoreWithOnboarding(input: {
   });
 }
 
+export async function completeReview(storeId: string): Promise<void> {
+  const progress = await prisma.storeOnboardingProgress.findUniqueOrThrow({ where: { storeId } });
+  if (!progress.step1EstablishmentDone) {
+    throw new Error("step 1 (establishment) must be done before completing the review");
+  }
+
+  await prisma.storeOnboardingProgress.update({
+    where: { storeId },
+    data: { step8ReviewDone: true, completedAt: new Date() },
+  });
+}
+
+export function canAccessDashboard(progress: StoreOnboardingProgress): boolean {
+  return progress.step1EstablishmentDone;
+}
+
 export async function markStepDone(storeId: string, step: OnboardingStepKey): Promise<void> {
   // updateMany (not update) so this is a no-op for stores with no progress row
   // (e.g. created before onboarding tracking existed, or in tests that create
