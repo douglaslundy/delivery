@@ -20,20 +20,27 @@ export default function LoginPage() {
   }
 
   return (
-    <main>
-      <h1>Entrar</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          Senha
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit">Entrar</button>
-      </form>
-    </main>
+    <div className="auth">
+      <div className="auth-card">
+        <div className="brand">
+          <span className="brand-mark">🛵</span>
+          Delivery
+        </div>
+        <h1>Entrar</h1>
+        <p className="sub">Acesse o painel da sua loja.</p>
+        <form onSubmit={handleSubmit}>
+          <label>
+            Email
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label>
+            Senha
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </label>
+          {error && <p role="alert">{error}</p>}
+          <button type="submit">Entrar</button>
+        </form>
+      </div>
+    </div>
   );
 }

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 import { markStepDone } from "@/lib/onboarding/progress";
 
-const ALLOWED_FIELDS = ["businessHours", "estimatedDeliveryMinutes", "tableCount", "hasPdv"] as const;
+const ALLOWED_FIELDS = ["businessHours", "estimatedDeliveryMinutes", "tableCount", "hasPdv", "autoAcceptOrders"] as const;
 
 function pickAllowedFields(body: Record<string, unknown>) {
   const data: Record<string, unknown> = {};
@@ -32,7 +32,23 @@ function validate(body: Record<string, unknown>): string | null {
   if ("hasPdv" in body && typeof body.hasPdv !== "boolean") {
     return "hasPdv must be a boolean";
   }
+  if ("autoAcceptOrders" in body && typeof body.autoAcceptOrders !== "boolean") {
+    return "autoAcceptOrders must be a boolean";
+  }
   return null;
+}
+
+export async function GET(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
+  const { storeId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+
+  const store = await prisma.store.findUniqueOrThrow({
+    where: { id: storeId },
+    select: { autoAcceptOrders: true, tableCount: true, hasPdv: true, estimatedDeliveryMinutes: true, businessHours: true },
+  });
+  return NextResponse.json(store);
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ storeId: string }> }) {

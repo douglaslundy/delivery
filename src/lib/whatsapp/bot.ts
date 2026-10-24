@@ -10,6 +10,15 @@ export async function handleIncomingMessage(
   text: string,
   client: EvolutionClient,
 ): Promise<void> {
+  await prisma.customer.upsert({
+    where: { storeId_phone: { storeId, phone: from } },
+    create: { storeId, phone: from, name: from, source: "WHATSAPP" },
+    update: {},
+  });
+
+  const instance = await prisma.whatsappInstance.findUnique({ where: { storeId } });
+  if (instance && !instance.botEnabled) return;
+
   const normalized = text.toLowerCase();
   const asksStatus = STATUS_KEYWORDS.some((keyword) => normalized.includes(keyword));
 
@@ -25,5 +34,5 @@ export async function handleIncomingMessage(
     }
   }
 
-  await client.sendMessage(from, "Um atendente vai te responder em breve.");
+  await client.sendMessage(from, instance?.botGreeting || "Um atendente vai te responder em breve.");
 }

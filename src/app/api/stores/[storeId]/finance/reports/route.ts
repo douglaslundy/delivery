@@ -1,3 +1,4 @@
+import { assertFeature, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 import { cashFlowReport, payablesReceivablesReport, revenueByChannelReport } from "@/lib/finance/reports";
@@ -6,6 +7,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "finance"));
+    if (blocked) return blocked;
   }
 
   const url = new URL(request.url);

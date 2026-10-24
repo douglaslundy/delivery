@@ -1,15 +1,9 @@
 import { Suspense } from "react";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import DeleteProduct from "./delete-product";
 
-async function MenuList() {
-  const session = await getServerSession(authOptions);
-  const storeId = (session as unknown as { storeId: string | null })?.storeId;
-
-  if (!storeId) {
-    return <p>Selecione uma loja para ver o cardapio.</p>;
-  }
+async function MenuList({ params }: { params: Promise<{ store: string }> }) {
+  const { store: storeId } = await params;
 
   const categories = await prisma.category.findMany({
     where: { storeId },
@@ -31,7 +25,11 @@ async function MenuList() {
             {category.products.map((product) => (
               <li key={product.id}>
                 <a href={`./menu/${product.id}`}>{product.name}</a>{" "}
-                {product.active ? "ativo" : "inativo"}
+                <span className={`badge ${product.active ? "ok" : "off"}`}>{product.active ? "ativo" : "inativo"}</span>
+                <span className="item-actions">
+                  <a href={`./menu/${product.id}`} className="badge">Editar</a>
+                  <DeleteProduct storeId={storeId} productId={product.id} name={product.name} />
+                </span>
               </li>
             ))}
           </ul>
@@ -44,7 +42,11 @@ async function MenuList() {
             {uncategorized.map((product) => (
               <li key={product.id}>
                 <a href={`./menu/${product.id}`}>{product.name}</a>{" "}
-                {product.active ? "ativo" : "inativo"}
+                <span className={`badge ${product.active ? "ok" : "off"}`}>{product.active ? "ativo" : "inativo"}</span>
+                <span className="item-actions">
+                  <a href={`./menu/${product.id}`} className="badge">Editar</a>
+                  <DeleteProduct storeId={storeId} productId={product.id} name={product.name} />
+                </span>
               </li>
             ))}
           </ul>
@@ -54,13 +56,14 @@ async function MenuList() {
   );
 }
 
-export default function MenuPage() {
+export default function MenuPage({ params }: { params: Promise<{ store: string }> }) {
   return (
     <main>
-      <h1>Cardapio</h1>
-      <a href="./menu/novo">Novo produto</a>
+      <h1>Cardápio</h1>
+      <a href="./menu/novo">+ Novo produto</a>{" "}
+      <a href="./categorias" style={{ background: "var(--surface)", color: "var(--text)", border: "1px solid var(--border)" }}>Gerenciar categorias</a>
       <Suspense fallback={<p>Carregando...</p>}>
-        <MenuList />
+        <MenuList params={params} />
       </Suspense>
     </main>
   );

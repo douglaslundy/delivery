@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Feedback, useAction } from "../feedback";
+import RowActions from "../row-actions";
+import FinanceCategories from "./finance-categories";
 
 type Entry = { id: string; kind: string; amountCents: number; description: string; dueDate: string | null; paidAt: string | null };
 type Account = { id: string; name: string; initialBalanceCents: number; balanceCents: number };
@@ -17,6 +20,7 @@ export default function FinanceiroPageClient() {
   const [payables, setPayables] = useState<Report[]>([]);
   const [revenue, setRevenue] = useState<Report[]>([]);
   const [form, setForm] = useState({ kind: "EXPENSE", amountCents: "", description: "", dueDate: "" });
+  const { busy, msg, run } = useAction();
 
   async function reload() {
     const [entriesRes, accountsRes, cashFlowRes, payablesRes, revenueRes] = await Promise.all([
@@ -37,26 +41,93 @@ export default function FinanceiroPageClient() {
     reload();
   }, [storeId]);
 
+  async function createAccount(e: React.FormEvent) {
+    e.preventDefault();
+    const ok = await run(
+      () =>
+        fetch(`/api/stores/${storeId}/finance/accounts`, {
+          method: "POST",
+          body: JSON.stringify({ name: accountForm.name.trim(), initialBalanceCents: Number(accountForm.balance) || 0 }),
+        }),
+      "Conta criada!",
+    );
+    if (ok) {
+      setAccountForm({ name: "", balance: "0" });
+      reload();
+    }
+  }
+
   async function createEntry() {
-    await fetch(`/api/stores/${storeId}/finance/entries`, {
-      method: "POST",
-      body: JSON.stringify({
-        kind: form.kind,
-        amountCents: Number(form.amountCents),
-        description: form.description,
-        dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
-      }),
-    });
-    setForm({ kind: "EXPENSE", amountCents: "", description: "", dueDate: "" });
-    reload();
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/finance/entries`, {
+        method: "POST",
+        body: JSON.stringify({
+          kind: form.kind,
+          amountCents: Number(form.amountCents),
+          description: form.description,
+          dueDate: form.dueDate ? new Date(form.dueDate).toISOString() : null,
+        }),
+      });
+      if (res.ok) { setForm({ kind: "EXPENSE", amountCents: "", description: "", dueDate: "" }); reload(); }
+      return res;
+    }, "Lançamento adicionado!");
+  }
+
+  const [editEntry, setEditEntry] = useState<{ id: string; description: string; amount: string } | null>(null);
+  const [accountForm, setAccountForm] = useState({ name: "", balance: "0" });
+  const [editAccount, setEditAccount] = useState<{ id: string; name: string } | null>(null);
+
+  async function saveEntry() {
+    if (!editEntry) return;
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/finance/entries/${editEntry.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ description: editEntry.description, amountCents: Number(editEntry.amount) }),
+      });
+      if (res.ok) { setEditEntry(null); reload(); }
+      return res;
+    }, "Lançamento atualizado!");
+  }
+
+  async function removeEntry(entry: Entry) {
+    if (!window.confirm(`Excluir o lançamento "${entry.description}"?`)) return;
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/finance/entries/${entry.id}`, { method: "DELETE" });
+      if (res.ok) reload();
+      return res;
+    }, "Lançamento excluído.");
+  }
+
+  async function saveAccount() {
+    if (!editAccount) return;
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/finance/accounts/${editAccount.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: editAccount.name }),
+      });
+      if (res.ok) { setEditAccount(null); reload(); }
+      return res;
+    }, "Conta atualizada!");
+  }
+
+  async function removeAccount(account: Account) {
+    if (!window.confirm(`Excluir a conta "${account.name}"?`)) return;
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/finance/accounts/${account.id}`, { method: "DELETE" });
+      if (res.ok) reload();
+      return res;
+    }, "Conta excluída.");
   }
 
   async function settle(entryId: string) {
-    await fetch(`/api/stores/${storeId}/finance/entries/${entryId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ paidAt: new Date().toISOString() }),
-    });
-    reload();
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/finance/entries/${entryId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ paidAt: new Date().toISOString() }),
+      });
+      if (res.ok) reload();
+      return res;
+    }, "Marcado como pago!");
   }
 
   return (
@@ -68,8 +139,26 @@ export default function FinanceiroPageClient() {
         <ul>
           {entries.map((entry) => (
             <li key={entry.id}>
-              {entry.kind} — {entry.description} — R$ {(entry.amountCents / 100).toFixed(2)}{" "}
-              {entry.paidAt ? "pago" : <button onClick={() => settle(entry.id)}>Marcar como pago</button>}
+              <span className={`badge ${entry.kind === "INCOME" ? "ok" : "warn"}`}>{entry.kind === "INCOME" ? "Receita" : "Despesa"}</span>
+              {editEntry?.id === entry.id ? (
+                <>
+                  <input value={editEntry.description} onChange={(e) => setEditEntry({ ...editEntry, description: e.target.value })} />
+                  <input value={editEntry.amount} onChange={(e) => setEditEntry({ ...editEntry, amount: e.target.value })} placeholder="Valor em centavos" />
+                </>
+              ) : (
+                <>
+                  <span>{entry.description}</span> <strong>R$ {(entry.amountCents / 100).toFixed(2).replace(".", ",")}</strong>
+                </>
+              )}
+              {entry.paidAt ? <span className="badge ok">pago</span> : <button type="button" disabled={busy} onClick={() => settle(entry.id)}>Marcar como pago</button>}
+              <RowActions
+                editing={editEntry?.id === entry.id}
+                busy={busy}
+                onEdit={() => setEditEntry({ id: entry.id, description: entry.description, amount: String(entry.amountCents) })}
+                onSave={saveEntry}
+                onCancel={() => setEditEntry(null)}
+                onDelete={() => removeEntry(entry)}
+              />
             </li>
           ))}
         </ul>
@@ -81,7 +170,7 @@ export default function FinanceiroPageClient() {
           <input placeholder="Descricao" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <input placeholder="Valor em centavos" value={form.amountCents} onChange={(e) => setForm({ ...form, amountCents: e.target.value })} />
           <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
-          <button onClick={createEntry}>Adicionar</button>
+          <button disabled={busy} onClick={createEntry}>Adicionar</button>
         </div>
       </section>
 
@@ -90,11 +179,32 @@ export default function FinanceiroPageClient() {
         <ul>
           {accounts.map((account) => (
             <li key={account.id}>
-              {account.name} — saldo R$ {(account.balanceCents / 100).toFixed(2)}
+              {editAccount?.id === account.id ? (
+                <input value={editAccount.name} onChange={(e) => setEditAccount({ ...editAccount, name: e.target.value })} />
+              ) : (
+                <>
+                  <strong>{account.name}</strong> <span className="badge">saldo R$ {(account.balanceCents / 100).toFixed(2).replace(".", ",")}</span>
+                </>
+              )}
+              <RowActions
+                editing={editAccount?.id === account.id}
+                busy={busy}
+                onEdit={() => setEditAccount({ id: account.id, name: account.name })}
+                onSave={saveAccount}
+                onCancel={() => setEditAccount(null)}
+                onDelete={() => removeAccount(account)}
+              />
             </li>
           ))}
         </ul>
+        <form onSubmit={createAccount}>
+          <input placeholder="Nome da conta" value={accountForm.name} onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })} required />
+          <input placeholder="Saldo inicial em centavos" inputMode="numeric" value={accountForm.balance} onChange={(e) => setAccountForm({ ...accountForm, balance: e.target.value })} />
+          <button type="submit" disabled={busy}>Adicionar conta</button>
+        </form>
       </section>
+
+      <FinanceCategories storeId={storeId} />
 
       <section>
         <h2>Fluxo de caixa</h2>
@@ -118,7 +228,7 @@ export default function FinanceiroPageClient() {
               <tr key={i}>
                 <td>{row.description}</td>
                 <td>R$ {((row.amountCents ?? 0) / 100).toFixed(2)}</td>
-                <td>{row.overdue ? "vencido" : "em dia"}</td>
+                <td><span className={`badge ${row.overdue ? "warn" : "ok"}`}>{row.overdue ? "vencido" : "em dia"}</span></td>
               </tr>
             ))}
           </tbody>
@@ -138,6 +248,7 @@ export default function FinanceiroPageClient() {
           </tbody>
         </table>
       </section>
+      <Feedback msg={msg} />
     </main>
   );
 }

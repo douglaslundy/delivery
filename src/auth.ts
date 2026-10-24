@@ -41,15 +41,20 @@ export const authOptions: AuthOptions = {
         (token as unknown as { availableStoreIds: string[] }).availableStoreIds = memberships.map(
           (m) => m.storeId,
         );
+        const account = await prisma.account.findUnique({ where: { id: user.id } });
+        (token as unknown as { isPlatformAdmin: boolean }).isPlatformAdmin = account?.isPlatformAdmin ?? false;
       }
 
       return token;
     },
     async session({ session, token }) {
       const memberships = await prisma.storeMember.findMany({ where: { accountId: token.sub } });
+      // Le do banco a cada request para revogar/conceder admin sem exigir novo login.
+      const account = token.sub ? await prisma.account.findUnique({ where: { id: token.sub } }) : null;
 
       return {
         ...session,
+        isPlatformAdmin: account?.isPlatformAdmin ?? false,
         storeId: memberships.length === 1 ? memberships[0].storeId : null,
         availableStoreIds: memberships.map((m) => m.storeId),
       };

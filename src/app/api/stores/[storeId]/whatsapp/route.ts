@@ -1,3 +1,4 @@
+import { assertFeature, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
@@ -9,10 +10,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "whatsappBot"));
+    if (blocked) return blocked;
+  }
 
   const instance = await prisma.whatsappInstance.findUnique({
     where: { storeId },
-    select: { id: true, storeId: true, evolutionInstanceName: true, evolutionApiUrl: true, phoneNumber: true, connected: true },
+    select: { id: true, storeId: true, evolutionInstanceName: true, evolutionApiUrl: true, phoneNumber: true, connected: true, botEnabled: true, botGreeting: true },
   });
   return NextResponse.json(instance);
 }
@@ -21,6 +26,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "whatsappBot"));
+    if (blocked) return blocked;
   }
 
   const body = await request.json();
@@ -38,7 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
       evolutionApiUrl: body.evolutionApiUrl,
       apiKeyEncrypted: encryptCredential(body.apiKey),
     },
-    select: { id: true, storeId: true, evolutionInstanceName: true, evolutionApiUrl: true, phoneNumber: true, connected: true },
+    select: { id: true, storeId: true, evolutionInstanceName: true, evolutionApiUrl: true, phoneNumber: true, connected: true, botEnabled: true, botGreeting: true },
   });
 
   await markStepDone(storeId, "step5BotDone");

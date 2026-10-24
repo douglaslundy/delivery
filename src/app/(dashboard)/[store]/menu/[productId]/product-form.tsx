@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-
-type Addon = { id: string; groupName: string; name: string; priceCents: number; required: boolean; multiple: boolean };
+import { useParams, useRouter } from "next/navigation";
+import { Feedback, useAction } from "../../feedback";
+import AddonsSection from "./addons-section";
 
 export default function ProductForm() {
   const params = useParams<{ store: string; productId: string }>();
@@ -15,13 +15,12 @@ export default function ProductForm() {
   const [pricePerKg, setPricePerKg] = useState(false);
   const [priceCents, setPriceCents] = useState("");
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [addons, setAddons] = useState<Record<string, Addon[]>>({});
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { busy, msg, run } = useAction();
 
   useEffect(() => {
     fetch(`/api/stores/${storeId}/categories`).then((r) => r.json()).then(setCategories);
     if (!isNew) {
-      fetch(`/api/stores/${storeId}/products/${params.productId}/addons`).then((r) => r.json()).then(setAddons);
       fetch(`/api/stores/${storeId}/products`)
         .then((r) => r.json())
         .then((products: { id: string; name: string; categoryId: string | null; pricePerKg: boolean; priceCents: number | null }[]) => {
@@ -38,7 +37,6 @@ export default function ProductForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
 
     const body = {
       name,
@@ -48,12 +46,8 @@ export default function ProductForm() {
     };
 
     const url = isNew ? `/api/stores/${storeId}/products` : `/api/stores/${storeId}/products/${params.productId}`;
-    const res = await fetch(url, { method: isNew ? "POST" : "PATCH", body: JSON.stringify(body) });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? "erro ao salvar");
-    }
+    const ok = await run(() => fetch(url, { method: isNew ? "POST" : "PATCH", body: JSON.stringify(body) }), isNew ? "Produto cadastrado!" : "Salvo!");
+    if (ok && isNew) router.push(`/${storeId}/menu`);
   }
 
   return (
@@ -87,24 +81,12 @@ export default function ProductForm() {
           {pricePerKg ? "Preco por kg (centavos)" : "Preco (centavos)"}
           <input value={priceCents} onChange={(e) => setPriceCents(e.target.value)} />
         </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit">Salvar</button>
+        <Feedback msg={msg} />
+        <button type="submit" disabled={busy}>{busy ? "Salvando..." : "Salvar"}</button>
       </form>
 
       {!isNew && (
-        <section>
-          <h2>Adicionais</h2>
-          {Object.entries(addons).map(([groupName, group]) => (
-            <div key={groupName}>
-              <h3>{groupName}</h3>
-              <ul>
-                {group.map((a) => (
-                  <li key={a.id}>{a.name} — {a.priceCents}c</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
+        <AddonsSection storeId={storeId} productId={params.productId} />
       )}
     </main>
   );

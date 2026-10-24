@@ -53,6 +53,7 @@ export async function POST(
         priceCents: body.priceCents ?? 0,
         required: body.required ?? false,
         multiple: body.multiple ?? false,
+        active: body.active ?? true,
       },
     });
 

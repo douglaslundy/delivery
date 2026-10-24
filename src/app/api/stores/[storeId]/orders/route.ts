@@ -1,3 +1,4 @@
+import { assertFeature, assertWithinPlan, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
@@ -18,9 +19,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
       ...(status === "active" ? { status: { notIn: ["COMPLETED", "CANCELED"] } } : {}),
     },
     orderBy: { createdAt: "asc" },
+    include: { items: true },
   });
 
-  return NextResponse.json(orders);
+  // OrderItem so guarda productId: resolve o nome do produto para as telas.
+  const productIds = [...new Set(orders.flatMap((o) => o.items.map((i) => i.productId)))];
+  const products = await prisma.product.findMany({ where: { storeId, id: { in: productIds } }, select: { id: true, name: true } });
+  const names = new Map(products.map((p) => [p.id, p.name]));
+
+  return NextResponse.json(
+    orders.map((o) => ({ ...o, items: o.items.map((i) => ({ ...i, productName: names.get(i.productId) ?? "Produto removido" })) })),
+  );
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
@@ -30,6 +39,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
   }
 
   const body = await request.json();
+
+  const blocked = await planGuard(async () => {
+    await assertWithinPlan(storeId, "orders");
+    if (body.channel === "SALAO") await assertFeature(storeId, "tables");
+    if (body.channel === "PDV") await assertFeature(storeId, "pdv");
+    if (body.channel === "DELIVERY") await assertFeature(storeId, "delivery");
+  });
+  if (blocked) return blocked;
 
   try {
     const order = await createOrder(storeId, body);

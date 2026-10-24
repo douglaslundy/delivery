@@ -1,3 +1,4 @@
+import { assertFeature, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
@@ -10,6 +11,10 @@ export async function PATCH(
   const { storeId, entryId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "finance"));
+    if (blocked) return blocked;
   }
 
   const existing = await prisma.financeEntry.findFirst({ where: { id: entryId, storeId } });
@@ -33,4 +38,25 @@ export async function PATCH(
   });
 
   return NextResponse.json(entry);
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ storeId: string; entryId: string }> },
+) {
+  const { storeId, entryId } = await params;
+  if (!(await isStoreRequestAuthorized(request, storeId))) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  const blocked = await planGuard(() => assertFeature(storeId, "finance"));
+  if (blocked) return blocked;
+
+  const existing = await prisma.financeEntry.findFirst({ where: { id: entryId, storeId } });
+  if (!existing) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (existing.orderId) {
+    return NextResponse.json({ error: "Lançamento gerado pelo sistema não pode ser excluído." }, { status: 409 });
+  }
+
+  await prisma.financeEntry.delete({ where: { id: entryId } });
+  return new NextResponse(null, { status: 204 });
 }

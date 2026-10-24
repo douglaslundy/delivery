@@ -1,3 +1,4 @@
+import { assertFeature, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
@@ -7,6 +8,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "marketing"));
+    if (blocked) return blocked;
   }
 
   const customerId = new URL(request.url).searchParams.get("customerId");
@@ -23,6 +28,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ stor
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "marketing"));
+    if (blocked) return blocked;
   }
 
   const body = await request.json();

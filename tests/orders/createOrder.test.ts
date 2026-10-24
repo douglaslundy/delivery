@@ -18,6 +18,19 @@ describe("createOrder", () => {
     expect(order.totalCents).toBe(1600);
   });
 
+  it("auto-accepts into CONFIRMED and registers the customer when the store has autoAcceptOrders", async () => {
+    await prisma.store.update({ where: { id: storeId }, data: { autoAcceptOrders: true } });
+    const order = await createOrder(storeId, {
+      channel: "PDV",
+      customerId: "5511999990000",
+      customerName: "Maria",
+      items: [{ productId, quantity: 1, selectedAddonIds: [] }],
+    });
+    expect(order.status).toBe("CONFIRMED");
+    const customer = await prisma.customer.findUniqueOrThrow({ where: { storeId_phone: { storeId, phone: "5511999990000" } } });
+    expect(customer.name).toBe("Maria");
+  });
+
   it("rejects a SALAO order without tableNumber", async () => {
     await expect(createOrder(storeId, { channel: "SALAO", items: [{ productId, quantity: 1, selectedAddonIds: [] }] } as any))
       .rejects.toThrow();

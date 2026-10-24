@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Feedback, useAction } from "../feedback";
 
 type Progress = {
   step1EstablishmentDone: boolean;
@@ -28,6 +29,7 @@ export default function OnboardingPageClient() {
   const params = useParams<{ store: string }>();
   const storeId = params.store;
   const [progress, setProgress] = useState<Progress>(null);
+  const { busy, msg, run } = useAction();
 
   function reload() {
     fetch(`/api/stores/${storeId}/onboarding`)
@@ -38,8 +40,11 @@ export default function OnboardingPageClient() {
   useEffect(reload, [storeId]);
 
   async function finishReview() {
-    await fetch(`/api/stores/${storeId}/onboarding/complete-review`, { method: "POST" });
-    reload();
+    await run(async () => {
+      const res = await fetch(`/api/stores/${storeId}/onboarding/complete-review`, { method: "POST" });
+      if (res.ok) reload();
+      return res;
+    }, "Revisão concluída!");
   }
 
   return (
@@ -49,14 +54,15 @@ export default function OnboardingPageClient() {
       <ol>
         {STEPS.map((step) => (
           <li key={step.key}>
-            {progress?.[step.key] ? "✓" : "○"} <a href={step.href}>{step.label}</a>
+            <span className={`badge ${progress?.[step.key] ? "ok" : "off"}`}>{progress?.[step.key] ? "✓ feito" : "pendente"}</span> <a href={step.href}>{step.label}</a>
           </li>
         ))}
         <li>
-          {progress?.step8ReviewDone ? "✓" : "○"} Revisao final{" "}
-          {!progress?.step8ReviewDone && <button onClick={finishReview}>Concluir revisao</button>}
+          <span className={`badge ${progress?.step8ReviewDone ? "ok" : "off"}`}>{progress?.step8ReviewDone ? "✓ feito" : "pendente"}</span> Revisão final{" "}
+          {!progress?.step8ReviewDone && <button disabled={busy} onClick={finishReview}>Concluir revisao</button>}
         </li>
       </ol>
+      <Feedback msg={msg} />
     </main>
   );
 }

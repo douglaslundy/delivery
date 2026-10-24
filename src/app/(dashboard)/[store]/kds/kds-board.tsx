@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { io } from "socket.io-client";
+import OrderItems, { type OrderLine } from "@/components/order-items";
 import { nextStatus } from "@/lib/orders/stateMachine";
 
 type Order = {
@@ -11,6 +12,7 @@ type Order = {
   channel: "PDV" | "SALAO" | "DELIVERY" | "AGENDADO";
   totalCents: number;
   tableNumber: string | null;
+  items?: OrderLine[];
 };
 
 const VISIBLE_STATUSES = ["CONFIRMED", "PREPARING"];
@@ -55,14 +57,26 @@ export default function KdsBoard() {
   return (
     <main>
       <h1>KDS</h1>
-      <ul>
-        {orders.map((order) => (
-          <li key={order.id}>
-            {order.channel} {order.tableNumber ? `mesa ${order.tableNumber}` : ""} — {order.status} — R$ {(order.totalCents / 100).toFixed(2)}
-            <button onClick={() => advance(order)}>Avancar</button>
-          </li>
-        ))}
-      </ul>
+      <p>Pedidos em preparo, atualizados em tempo real.</p>
+      {orders.length === 0 ? (
+        <p className="empty">Nenhum pedido em andamento.</p>
+      ) : (
+        <div className="kds">
+          {orders.map((order) => (
+            <div key={order.id} className={`ticket${order.status === "PREPARING" ? " preparing" : ""}`}>
+              <div className="t-head">
+                <span>{order.channel}{order.tableNumber ? ` · mesa ${order.tableNumber}` : ""}</span>
+                <span className={`badge${order.status === "PREPARING" ? " warn" : ""}`}>
+                  {order.status === "PREPARING" ? "Preparando" : "Confirmado"}
+                </span>
+              </div>
+              <OrderItems items={order.items} />
+              <div className="t-total">R$ {(order.totalCents / 100).toFixed(2).replace(".", ",")}</div>
+              <button onClick={() => advance(order)}>Avançar</button>
+            </div>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

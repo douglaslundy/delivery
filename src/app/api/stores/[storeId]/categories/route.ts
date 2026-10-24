@@ -1,3 +1,4 @@
+import { assertWithinPlan, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
@@ -20,6 +21,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertWithinPlan(storeId, "categories"));
+    if (blocked) return blocked;
   }
 
   const body = await request.json();

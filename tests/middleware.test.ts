@@ -15,4 +15,10 @@ describe("middleware matcher", () => {
   it("excludes the Caddy on-demand TLS ask endpoint (called before any session/host exists)", () => {
     expect(pattern.test("/api/tls-check")).toBe(false);
   });
+
+  it("excludes the platform admin area (guarded by requirePlatformAdmin instead of the tenant host)", () => {
+    expect(pattern.test("/admin")).toBe(false);
+    expect(pattern.test("/admin/lojas")).toBe(false);
+    expect(pattern.test("/api/admin/stores")).toBe(false);
+  });
 });

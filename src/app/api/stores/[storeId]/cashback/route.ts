@@ -1,3 +1,4 @@
+import { assertFeature, planGuard } from "@/lib/plans/enforce";
 import { NextResponse } from "next/server";
 import { isStoreRequestAuthorized } from "@/lib/menu/guard";
 import { getCashbackBalance, applyCashbackCredit, debitCashback, CashbackError } from "@/lib/marketing/cashback";
@@ -6,6 +7,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ stor
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "marketing"));
+    if (blocked) return blocked;
   }
 
   const url = new URL(request.url);
@@ -22,6 +27,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
   const { storeId } = await params;
   if (!(await isStoreRequestAuthorized(request, storeId))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
+  {
+    const blocked = await planGuard(() => assertFeature(storeId, "marketing"));
+    if (blocked) return blocked;
   }
 
   const body = await request.json();

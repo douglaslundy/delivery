@@ -8,6 +8,7 @@ export type CreateOrderInput = {
   tableNumber?: string;
   scheduledFor?: Date;
   customerId?: string;
+  customerName?: string;
   deliveryAddress?: Record<string, unknown>;
   items: LineItemSelection[];
   couponCode?: string;
@@ -53,6 +54,9 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
 
   const subtotalCents = pricedItems.reduce((sum, item) => sum + item.unitPriceCents * item.quantity, 0);
 
+  const store = await prisma.store.findUniqueOrThrow({ where: { id: storeId }, select: { autoAcceptOrders: true } });
+  const initialStatus = store.autoAcceptOrders ? "CONFIRMED" : "RECEIVED";
+
   return prisma.$transaction(async (tx) => {
     let discountCents = 0;
     let couponId: string | undefined;
@@ -77,6 +81,7 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
       data: {
         storeId,
         channel: input.channel,
+        status: initialStatus,
         tableNumber: input.tableNumber,
         scheduledFor: input.scheduledFor,
         customerId: input.customerId,
@@ -91,8 +96,21 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
     });
 
     await tx.orderStatusEvent.create({
-      data: { storeId, orderId: order.id, status: "RECEIVED" },
+      data: { storeId, orderId: order.id, status: initialStatus },
     });
+
+    if (input.customerId) {
+      await tx.customer.upsert({
+        where: { storeId_phone: { storeId, phone: input.customerId } },
+        create: {
+          storeId,
+          phone: input.customerId,
+          name: input.customerName ?? input.customerId,
+          source: input.channel === "DELIVERY" ? "WHATSAPP" : "MANUAL",
+        },
+        update: input.customerName ? { name: input.customerName } : {},
+      });
+    }
 
     return order;
   });

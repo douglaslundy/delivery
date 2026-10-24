@@ -22,7 +22,10 @@ model Store {
   estimatedDeliveryMinutes Int?
   tableCount Int?
   hasPdv    Boolean  @default(false)
+  autoAcceptOrders Boolean @default(false)
   active    Boolean  @default(true)
+  planId    String?
+  subscriptionStatus String @default("ACTIVE")
   timezone  String   @default("America/Sao_Paulo")
   currency  String   @default("BRL")
   createdAt DateTime @default(now())
@@ -48,6 +51,8 @@ model Store {
   deliveryPeople    DeliveryPerson[]
   deliveryZones     DeliveryZone[]
   onboardingProgress StoreOnboardingProgress?
+  customers         Customer[]
+  plan              Plan? @relation(fields: [planId], references: [id], onDelete: Restrict)
 }
 
 model StoreDomain {
@@ -64,9 +69,28 @@ model Account {
   id           String   @id @default(cuid())
   email        String   @unique
   passwordHash String
+  isPlatformAdmin Boolean @default(false)
   createdAt    DateTime @default(now())
 
   memberships  StoreMember[]
+}
+
+model Plan {
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  priceCents        Int
+  active            Boolean  @default(true)
+  maxOrdersPerMonth Int?
+  maxProducts       Int?
+  maxCustomers      Int?
+  maxCategories     Int?
+  maxMembers        Int?
+  maxDeliveryPeople Int?
+  features          Json     @default("{}")
+  createdAt         DateTime @default(now())
+
+  stores            Store[]
 }
 
 enum StoreRole {
@@ -378,6 +402,8 @@ model WhatsappInstance {
   apiKeyEncrypted       String
   phoneNumber           String?
   connected             Boolean @default(false)
+  botEnabled            Boolean @default(true)
+  botGreeting           String?
   store                 Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@unique([storeId])
@@ -418,4 +444,17 @@ model StoreOnboardingProgress {
   completedAt             DateTime?
 
   store                   Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  storeId   String
+  name      String
+  phone     String
+  source    String   @default("MANUAL")
+  createdAt DateTime @default(now())
+
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, phone])
 }
