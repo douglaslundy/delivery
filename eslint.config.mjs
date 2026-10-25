@@ -6,6 +6,13 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // Override default ignores of eslint-config-next.
+  {
+    rules: {
+      // Telas carregam dados com load() no useEffect de montagem; a regra acusa esse padrao.
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
+  { files: ["**/*.test.ts", "**/*.test.tsx"], rules: { "@typescript-eslint/no-explicit-any": "off" } },
   globalIgnores([
     // Default ignores of eslint-config-next:
     ".next/**",

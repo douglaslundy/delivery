@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -16,6 +17,7 @@ export default function LoginPage() {
       setError("Email ou senha invalidos.");
       return;
     }
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- navegacao completa recarrega a sessao
     window.location.href = "/store-picker";
   }
 
@@ -40,7 +42,7 @@ export default function LoginPage() {
           {error && <p role="alert">{error}</p>}
           <button type="submit">Entrar</button>
         </form>
-        <p className="sub"><a href="/esqueci-senha">Esqueci minha senha — fale com o suporte</a></p>
+        <p className="sub"><Link href="/esqueci-senha">Esqueci minha senha</Link></p>
       </div>
     </div>
   );

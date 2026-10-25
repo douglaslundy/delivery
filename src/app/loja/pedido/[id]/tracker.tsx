@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 type Tracked = {
   id: string;
@@ -60,7 +61,7 @@ export default function Tracker() {
     };
   }, [id, phone]);
 
-  if (error) return <div className="shop"><p className="shop-empty">{error}</p><a className="shop-link" href="/loja">Voltar ao cardápio</a></div>;
+  if (error) return <div className="shop"><p className="shop-empty">{error}</p><Link className="shop-link" href="/loja">Voltar ao cardápio</Link></div>;
   if (!order) return <div className="shop"><p className="shop-empty">Carregando pedido...</p></div>;
 
   return (
@@ -91,7 +92,7 @@ export default function Tracker() {
             {order.paymentMethod && <div><span>Pagamento</span><span>{order.paymentMethod}</span></div>}
           </div>
         </section>
-        <a className="shop-link" href="/loja">Fazer outro pedido</a>
+        <Link className="shop-link" href="/loja">Fazer outro pedido</Link>
       </div>
     </div>
   );

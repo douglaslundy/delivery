@@ -35,5 +35,5 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   runtime: "nodejs",
-  matcher: ["/((?!$|admin(?:/|$)|api/admin(?:/|$)|api/auth(?:/|$)|api/webhooks(?:/|$)|api/tls-check(?:/|$)|login(?:/|$)|esqueci-senha(?:/|$)|loja(?:/|$)|api/public(?:/|$)|store-picker(?:/|$)|onboarding(?:/|$)|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!$|admin(?:/|$)|api/admin(?:/|$)|api/auth(?:/|$)|api/webhooks(?:/|$)|api/tls-check(?:/|$)|api/cron(?:/|$)|login(?:/|$)|esqueci-senha(?:/|$)|redefinir-senha(?:/|$)|loja(?:/|$)|api/public(?:/|$)|store-picker(?:/|$)|onboarding(?:/|$)|_next/static|_next/image|favicon.ico).*)"],
 };

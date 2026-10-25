@@ -276,6 +276,7 @@ function CartSheet({ menu, cart, onChange, onClose }: { menu: Menu; cart: Line[]
       const data = await res.json().catch(() => ({}));
       if (!res.ok) return setError(data.error ?? `Erro ${res.status}`);
       onChange([]);
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- navegacao completa apos o pedido
       window.location.href = `/loja/pedido/${data.id}?phone=${encodeURIComponent(form.phone)}`;
     } catch {
       setError("Falha de conexão. Tente novamente.");

@@ -73,6 +73,20 @@ model Account {
   createdAt    DateTime @default(now())
 
   memberships  StoreMember[]
+  passwordResets PasswordReset[]
+}
+
+model PasswordReset {
+  id        String    @id @default(cuid())
+  accountId String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId])
 }
 
 model Plan {
@@ -291,6 +305,7 @@ model FinanceEntry {
   dueDate       DateTime?
   paidAt        DateTime?
   description   String
+  reminderSentAt DateTime?
   createdAt     DateTime  @default(now())
 
   store         Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -457,4 +472,13 @@ model Customer {
   store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@unique([storeId, phone])
+}
+
+model RecoveryMessage {
+  id         String   @id @default(cuid())
+  storeId    String
+  customerId String
+  sentAt     DateTime @default(now())
+
+  @@index([storeId, customerId, sentAt])
 }
