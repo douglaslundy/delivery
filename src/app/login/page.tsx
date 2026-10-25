@@ -40,6 +40,7 @@ export default function LoginPage() {
           {error && <p role="alert">{error}</p>}
           <button type="submit">Entrar</button>
         </form>
+        <p className="sub"><a href="/esqueci-senha">Esqueci minha senha — fale com o suporte</a></p>
       </div>
     </div>
   );

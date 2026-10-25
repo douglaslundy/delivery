@@ -13,6 +13,7 @@ export type CreateOrderInput = {
   items: LineItemSelection[];
   couponCode?: string;
   paymentMethod?: string;
+  deliveryFeeCents?: number;
 };
 
 export async function createOrder(storeId: string, input: CreateOrderInput): Promise<Order> {
@@ -89,8 +90,9 @@ export async function createOrder(storeId: string, input: CreateOrderInput): Pro
         paymentMethod: input.paymentMethod,
         subtotalCents,
         discountCents,
+        deliveryFeeCents: input.deliveryFeeCents ?? 0,
         couponId,
-        totalCents: subtotalCents - discountCents,
+        totalCents: subtotalCents - discountCents + (input.deliveryFeeCents ?? 0),
         items: { create: pricedItems },
       },
     });

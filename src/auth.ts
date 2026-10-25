@@ -55,6 +55,7 @@ export const authOptions: AuthOptions = {
       return {
         ...session,
         isPlatformAdmin: account?.isPlatformAdmin ?? false,
+        accountId: token.sub ?? null,
         storeId: memberships.length === 1 ? memberships[0].storeId : null,
         availableStoreIds: memberships.map((m) => m.storeId),
       };

@@ -12,6 +12,7 @@ const ITEMS = [
   { path: "/menu", label: "Cardápio", ico: "🍔" },
   { path: "/categorias", label: "Categorias", ico: "🗂️" },
   { path: "/clientes", label: "Clientes", ico: "👥" },
+  { path: "/equipe", label: "Equipe", ico: "🧑‍🤝‍🧑" },
   { path: "/whatsapp", label: "WhatsApp", ico: "💬" },
   { path: "/entregas", label: "Entregas", ico: "🛵" },
   { path: "/financeiro", label: "Financeiro", ico: "💰" },
