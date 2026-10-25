@@ -15,6 +15,7 @@ export function createEvolutionClient(instance: WhatsappInstance): EvolutionClie
         headers: { apikey: decryptCredential(instance.apiKeyEncrypted), "content-type": "application/json" },
         body: JSON.stringify({ number: to, text }),
       });
+      if (!res.ok) throw new Error(`Evolution sendText falhou: HTTP ${res.status}`);
     },
   };
 }
