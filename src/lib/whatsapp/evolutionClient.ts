@@ -8,9 +8,7 @@ export interface EvolutionClient {
 export function createEvolutionClient(instance: WhatsappInstance): EvolutionClient {
   return {
     async sendMessage(to, text) {
-      // Exact Evolution API path/payload shape is unverified without real credentials
-      // (spec 00/04 pendency) — confirm against the real instance once credentials arrive.
-      await fetch(`${instance.evolutionApiUrl}/message/sendText/${instance.evolutionInstanceName}`, {
+      const res = await fetch(`${instance.evolutionApiUrl}/message/sendText/${instance.evolutionInstanceName}`, {
         method: "POST",
         headers: { apikey: decryptCredential(instance.apiKeyEncrypted), "content-type": "application/json" },
         body: JSON.stringify({ number: to, text }),
