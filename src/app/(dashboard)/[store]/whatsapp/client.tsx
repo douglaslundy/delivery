@@ -22,6 +22,7 @@ export default function WhatsappClient() {
   const [greeting, setGreeting] = useState("");
   const connect = useAction();
   const bot = useAction();
+  const manage = useAction();
   const [webhookWarning, setWebhookWarning] = useState<string | null>(null);
 
   const loadInstance = useCallback(async () => {
@@ -81,6 +82,22 @@ export default function WhatsappClient() {
     }
   }
 
+  async function manageInstance(label: string, request: () => Promise<Response>, confirmText?: string) {
+    if (confirmText && !window.confirm(confirmText)) return;
+    const ok = await manage.run(request, label);
+    if (ok) {
+      setQr(null);
+      loadInstance();
+    }
+  }
+
+  const restartInstance = () =>
+    manageInstance("Instância reiniciada.", () => fetch(`${base}/restart`, { method: "POST" }));
+  const disconnectInstance = () =>
+    manageInstance("WhatsApp desconectado. Escaneie o novo QR code para reconectar.", () => fetch(`${base}/disconnect`, { method: "POST" }), "Desconectar o WhatsApp desta loja? Será preciso escanear o QR code de novo.");
+  const deleteInstance = (local = false) =>
+    manageInstance("Instância excluída.", () => fetch(`${base}${local ? "?local=1" : ""}`, { method: "DELETE" }), local ? "Remover a instância só deste painel? Ela continuará existindo na Evolution." : "Excluir a instância? Ela será apagada na Evolution e o bot deixa de funcionar.");
+
   function saveBot(patch: { botEnabled?: boolean; botGreeting?: string | null }) {
     return bot.run(async () => {
       const res = await fetch(`${base}/bot`, { method: "PATCH", body: JSON.stringify(patch) });
@@ -131,6 +148,17 @@ export default function WhatsappClient() {
               <p className="empty">Aguardando QR code...</p>
             )}
           </>
+        )}
+        {instance && (
+          <div>
+            <button type="button" disabled={manage.busy} onClick={restartInstance}>Reiniciar</button>
+            {instance.connected && (
+              <button type="button" disabled={manage.busy} onClick={disconnectInstance}>Desconectar</button>
+            )}
+            <button type="button" disabled={manage.busy} onClick={() => deleteInstance()}>Excluir instância</button>
+            <button type="button" disabled={manage.busy} onClick={() => deleteInstance(true)}>Remover só do painel</button>
+            <Feedback msg={manage.msg} />
+          </div>
         )}
       </section>
 
