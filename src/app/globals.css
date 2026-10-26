@@ -126,16 +126,16 @@ tr:hover td { background: var(--bg); }
 .sidebar {
   background: var(--sidebar); color: var(--sidebar-text);
   display: flex; flex-direction: column; padding: 20px 14px;
-  position: sticky; top: 0; height: 100vh;
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; font-size: 18px; padding: 4px 10px 22px; }
 .brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); display: grid; place-items: center; font-size: 17px; }
-.nav { display: flex; flex-direction: column; gap: 4px; }
+.nav { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
 .nav a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; font-weight: 500; }
 .nav a:hover { background: rgba(255, 255, 255, .07); color: #fff; }
 .nav a[aria-current="page"] { background: var(--primary); color: #fff; }
 .nav .ico { width: 20px; text-align: center; }
-.sidebar-foot { margin-top: auto; font-size: 12px; opacity: .6; padding: 0 10px; }
+.sidebar-foot { margin-top: auto; flex-shrink: 0; font-size: 12px; opacity: .6; padding: 12px 10px 0; }
 .shell-main { min-width: 0; }
 
 @media (max-width: 800px) {
